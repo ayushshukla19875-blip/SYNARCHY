@@ -1,0 +1,435 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans);color:var(--color-text-primary);background:transparent}
+.tabs{display:flex;gap:2px;background:var(--color-background-secondary);padding:4px;border-radius:var(--border-radius-lg);border:0.5px solid var(--color-border-tertiary);margin-bottom:14px}
+.tab{flex:1;background:none;border:none;padding:7px;border-radius:var(--border-radius-md);font-size:12px;cursor:pointer;color:var(--color-text-secondary);font-family:var(--font-sans);transition:all .15s}
+.tab.on{background:var(--color-background-primary);color:var(--color-text-primary);border:0.5px solid var(--color-border-secondary)}
+.pg{display:none}.pg.on{display:block}
+
+/* MAP */
+#map-wrap{position:relative;width:100%;background:var(--color-background-secondary);border-radius:var(--border-radius-lg);border:0.5px solid var(--color-border-tertiary);overflow:hidden}
+#map-svg{width:100%;display:block}
+.country{cursor:pointer;stroke-width:0.4}
+.country:hover{stroke:#fff;stroke-width:1.2}
+.legend-row{display:flex;align-items:center;gap:8px;padding:10px 14px;flex-wrap:wrap}
+.legend-swatch{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--color-text-secondary)}
+.sw{width:14px;height:10px;border-radius:2px}
+#tooltip{position:absolute;pointer-events:none;background:var(--color-background-primary);border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:8px 10px;font-size:11px;display:none;z-index:10;max-width:160px}
+#tooltip .tt-name{font-weight:500;font-size:12px;margin-bottom:4px}
+#tooltip .tt-row{display:flex;justify-content:space-between;gap:12px;margin:2px 0;color:var(--color-text-secondary)}
+#tooltip .tt-val{font-family:var(--font-mono);font-weight:500;color:var(--color-text-primary)}
+.detail-bar{background:var(--color-background-secondary);border-top:0.5px solid var(--color-border-tertiary);padding:10px 14px;display:flex;gap:16px;flex-wrap:wrap;align-items:center;min-height:44px}
+.det-item{font-size:11px;color:var(--color-text-secondary)}
+.det-val{font-family:var(--font-mono);font-weight:500;color:var(--color-text-primary);margin-left:4px}
+.det-name{font-size:13px;font-weight:500;color:var(--color-text-primary);margin-right:8px}
+.load-msg{text-align:center;padding:60px 20px;font-size:13px;color:var(--color-text-secondary)}
+
+/* SOLVER */
+.solver-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.panel{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:14px 16px}
+.panel h3{font-size:13px;font-weight:500;margin-bottom:12px;color:var(--color-text-secondary)}
+.goal-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:0.5px solid var(--color-border-tertiary)}
+.goal-row:last-child{border-bottom:none}
+.goal-label{font-size:12px}
+.goal-controls{display:flex;gap:6px;align-items:center}
+.pri-btn{width:24px;height:24px;border-radius:6px;border:0.5px solid var(--color-border-secondary);background:none;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--color-text-secondary);transition:all .15s}
+.pri-btn.on{background:var(--color-background-info);border-color:var(--color-border-info);color:var(--color-text-info)}
+.pri-btn.hi{background:#dcfce7;border-color:#22c55e;color:#15803d}
+.pri-btn.lo{background:#fef2f2;border-color:#ef4444;color:#dc2626}
+select{background:var(--color-background-secondary);border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);color:var(--color-text-primary);font-size:11px;padding:4px 6px;cursor:pointer;font-family:var(--font-sans)}
+.solve-btn{width:100%;margin-top:12px;padding:10px;background:var(--color-background-info);border:0.5px solid var(--color-border-info);border-radius:var(--border-radius-md);color:var(--color-text-info);font-size:13px;font-weight:500;cursor:pointer;font-family:var(--font-sans);transition:all .15s}
+.solve-btn:hover{opacity:.85}
+.result-card{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px 12px;margin-bottom:8px;border:0.5px solid var(--color-border-tertiary)}
+.rc-title{font-size:12px;font-weight:500;margin-bottom:6px}
+.rc-lever{display:flex;align-items:center;gap:8px;margin:4px 0;font-size:11px;color:var(--color-text-secondary)}
+.rc-bar-wrap{flex:1;height:4px;background:var(--color-border-tertiary);border-radius:2px;overflow:hidden}
+.rc-bar{height:100%;border-radius:2px;transition:width .4s}
+.rc-val{font-family:var(--font-mono);font-size:11px;min-width:24px;text-align:right;color:var(--color-text-primary)}
+.tradeoff-tag{font-size:10px;padding:2px 7px;border-radius:10px;border:0.5px solid var(--color-border-secondary);color:var(--color-text-secondary);margin:2px}
+.tradeoff-tag.cost{border-color:#ef4444;color:#dc2626;background:#fef2f2}
+.tradeoff-tag.gain{border-color:#22c55e;color:#15803d;background:#dcfce7}
+.empty-state{color:var(--color-text-tertiary);font-size:12px;text-align:center;padding:30px 0}
+</style>
+</head>
+<body>
+
+<div class="tabs">
+  <button class="tab on" onclick="switchTab('map')">World AI Governance Map</button>
+  <button class="tab" onclick="switchTab('solver')">Reverse Policy Solver</button>
+</div>
+
+<div id="pg-map" class="pg on">
+  <div id="map-wrap">
+    <div id="map-inner"><div class="load-msg">Loading world map…</div></div>
+    <div id="tooltip">
+      <div class="tt-name" id="tt-name">—</div>
+      <div class="tt-row"><span>AI Readiness</span><span class="tt-val" id="tt-ready">—</span></div>
+      <div class="tt-row"><span>Freedom score</span><span class="tt-val" id="tt-free">—</span></div>
+      <div class="tt-row"><span>Regulation</span><span class="tt-val" id="tt-reg">—</span></div>
+      <div class="tt-row"><span>Regime type</span><span class="tt-val" id="tt-type">—</span></div>
+    </div>
+    <div class="detail-bar" id="detail-bar">
+      <span style="font-size:12px;color:var(--color-text-tertiary)">Hover over a country to see its AI governance profile</span>
+    </div>
+    <div class="legend-row">
+      <span style="font-size:11px;color:var(--color-text-secondary);margin-right:4px">AI Readiness:</span>
+      <span class="legend-swatch"><span class="sw" style="background:#1a3a5c"></span>Very High (80+)</span>
+      <span class="legend-swatch"><span class="sw" style="background:#2563a8"></span>High (65–80)</span>
+      <span class="legend-swatch"><span class="sw" style="background:#60a5d8"></span>Medium (50–65)</span>
+      <span class="legend-swatch"><span class="sw" style="background:#93c5e8"></span>Low (35–50)</span>
+      <span class="legend-swatch"><span class="sw" style="background:#cce0f0"></span>Very Low (&lt;35)</span>
+      <span class="legend-swatch"><span class="sw" style="background:#ddd"></span>No data</span>
+    </div>
+  </div>
+  <div style="margin-top:8px;font-size:10px;color:var(--color-text-tertiary)">Sources: Oxford Government AI Readiness Index 2023 · Freedom House 2024 · OECD AI Policy Observatory 2024 · V-Dem 2024</div>
+</div>
+
+<div id="pg-solver" class="pg">
+  <div class="solver-grid">
+    <div class="panel">
+      <h3>Define your governance goal</h3>
+
+      <div class="goal-row">
+        <span class="goal-label">Freedom Index target</span>
+        <div class="goal-controls">
+          <select id="g-freedom">
+            <option value="any">Any</option>
+            <option value="high" selected>High (70+)</option>
+            <option value="max">Maximum</option>
+          </select>
+        </div>
+      </div>
+      <div class="goal-row">
+        <span class="goal-label">Economic stability</span>
+        <div class="goal-controls">
+          <select id="g-economy">
+            <option value="any">Any</option>
+            <option value="high" selected>High (65+)</option>
+            <option value="max">Maximum</option>
+          </select>
+        </div>
+      </div>
+      <div class="goal-row">
+        <span class="goal-label">Public trust</span>
+        <div class="goal-controls">
+          <select id="g-trust">
+            <option value="any">Any</option>
+            <option value="high" selected>High (60+)</option>
+            <option value="max">Maximum</option>
+          </select>
+        </div>
+      </div>
+      <div class="goal-row">
+        <span class="goal-label">Misinformation control</span>
+        <div class="goal-controls">
+          <select id="g-info">
+            <option value="any">Any</option>
+            <option value="high">High (70+)</option>
+            <option value="max">Maximum</option>
+          </select>
+        </div>
+      </div>
+      <div class="goal-row">
+        <span class="goal-label">Social stability</span>
+        <div class="goal-controls">
+          <select id="g-stability">
+            <option value="any">Any</option>
+            <option value="high">High (65+)</option>
+            <option value="max">Maximum</option>
+          </select>
+        </div>
+      </div>
+      <div class="goal-row">
+        <span class="goal-label">Context / scenario</span>
+        <div class="goal-controls">
+          <select id="g-scenario">
+            <option value="demo">Democracy</option>
+            <option value="auth">Authoritarian</option>
+            <option value="dev">Dev. Economy</option>
+          </select>
+        </div>
+      </div>
+      <div class="goal-row">
+        <span class="goal-label">Acceptable freedom cost?</span>
+        <div class="goal-controls">
+          <select id="g-tolerance">
+            <option value="low">No — protect freedom</option>
+            <option value="med" selected>Some — balanced</option>
+            <option value="high">Yes — efficiency first</option>
+          </select>
+        </div>
+      </div>
+
+      <button class="solve-btn" onclick="solve()">Find optimal policy path ↗</button>
+    </div>
+
+    <div class="panel">
+      <h3>Recommended policy configurations</h3>
+      <div id="solver-results"><div class="empty-state">Set your goals and click solve</div></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<script>
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.toggle('on',['map','solver'][i]===name)});
+  document.querySelectorAll('.pg').forEach((p,i)=>{p.classList.toggle('on',['pg-map','pg-solver'][i]==='pg-'+name)});
+}
+
+const AI_DATA = {
+  'United States of America':{ready:84,freedom:83,regulation:38,type:'Liberal democracy'},
+  'United Kingdom':{ready:81,freedom:85,regulation:72,type:'Liberal democracy'},
+  'Finland':{ready:83,freedom:96,regulation:80,type:'Liberal democracy'},
+  'Sweden':{ready:82,freedom:96,regulation:78,type:'Liberal democracy'},
+  'Denmark':{ready:80,freedom:95,regulation:76,type:'Liberal democracy'},
+  'Norway':{ready:79,freedom:95,regulation:74,type:'Liberal democracy'},
+  'Germany':{ready:78,freedom:92,regulation:82,type:'Liberal democracy'},
+  'France':{ready:76,freedom:90,regulation:80,type:'Liberal democracy'},
+  'Netherlands':{ready:80,freedom:94,regulation:79,type:'Liberal democracy'},
+  'Canada':{ready:80,freedom:92,regulation:70,type:'Liberal democracy'},
+  'Australia':{ready:77,freedom:90,regulation:68,type:'Liberal democracy'},
+  'Japan':{ready:75,freedom:88,regulation:65,type:'Liberal democracy'},
+  'South Korea':{ready:73,freedom:85,regulation:60,type:'Liberal democracy'},
+  'Estonia':{ready:78,freedom:94,regulation:75,type:'e-Democracy'},
+  'Switzerland':{ready:82,freedom:96,regulation:72,type:'Liberal democracy'},
+  'Austria':{ready:74,freedom:93,regulation:76,type:'Liberal democracy'},
+  'Belgium':{ready:72,freedom:91,regulation:77,type:'Liberal democracy'},
+  'Spain':{ready:68,freedom:89,regulation:76,type:'Liberal democracy'},
+  'Italy':{ready:65,freedom:88,regulation:73,type:'Liberal democracy'},
+  'Poland':{ready:62,freedom:72,regulation:64,type:'Backsliding democracy'},
+  'Hungary':{ready:55,freedom:50,regulation:35,type:'Electoral autocracy'},
+  'Turkey':{ready:52,freedom:30,regulation:30,type:'Competitive autocracy'},
+  'Russia':{ready:54,freedom:15,regulation:25,type:'Consolidated autocracy'},
+  'China':{ready:72,freedom:8,regulation:60,type:'Digital authoritarianism'},
+  'India':{ready:57,freedom:66,regulation:45,type:'Electoral democracy'},
+  'Brazil':{ready:55,freedom:73,regulation:40,type:'Liberal democracy'},
+  'South Africa':{ready:45,freedom:78,regulation:38,type:'Liberal democracy'},
+  'Nigeria':{ready:32,freedom:45,regulation:22,type:'Hybrid regime'},
+  'Kenya':{ready:38,freedom:52,regulation:28,type:'Hybrid regime'},
+  'Egypt':{ready:42,freedom:18,regulation:30,type:'Consolidated autocracy'},
+  'Saudi Arabia':{ready:65,freedom:12,regulation:42,type:'Consolidated autocracy'},
+  'UAE':{ready:70,freedom:22,regulation:55,type:'Constitutional monarchy'},
+  'Singapore':{ready:82,freedom:52,regulation:65,type:'Managed democracy'},
+  'Israel':{ready:74,freedom:76,regulation:55,type:'Liberal democracy'},
+  'Argentina':{ready:48,freedom:74,regulation:35,type:'Liberal democracy'},
+  'Mexico':{ready:46,freedom:60,regulation:30,type:'Electoral democracy'},
+  'Colombia':{ready:44,freedom:65,regulation:28,type:'Electoral democracy'},
+  'Indonesia':{ready:48,freedom:62,regulation:32,type:'Electoral democracy'},
+  'Pakistan':{ready:35,freedom:38,regulation:20,type:'Hybrid regime'},
+  'Bangladesh':{ready:30,freedom:40,regulation:18,type:'Hybrid regime'},
+  'Vietnam':{ready:45,freedom:20,regulation:35,type:'Single-party state'},
+  'Thailand':{ready:52,freedom:36,regulation:38,type:'Competitive autocracy'},
+  'Malaysia':{ready:58,freedom:50,regulation:42,type:'Hybrid regime'},
+  'Philippines':{ready:47,freedom:55,regulation:30,type:'Electoral democracy'},
+  'Ukraine':{ready:50,freedom:60,regulation:38,type:'Electoral democracy'},
+  'Iran':{ready:38,freedom:14,regulation:28,type:'Theocratic autocracy'},
+  'Morocco':{ready:40,freedom:40,regulation:30,type:'Hybrid regime'},
+  'Ghana':{ready:36,freedom:72,regulation:24,type:'Liberal democracy'},
+  'Tanzania':{ready:28,freedom:48,regulation:18,type:'Hybrid regime'},
+  'Ethiopia':{ready:25,freedom:30,regulation:15,type:'Hybrid regime'},
+  'New Zealand':{ready:79,freedom:97,regulation:72,type:'Liberal democracy'},
+  'Portugal':{ready:66,freedom:92,regulation:74,type:'Liberal democracy'},
+  'Greece':{ready:60,freedom:84,regulation:70,type:'Liberal democracy'},
+  'Czech Republic':{ready:64,freedom:88,regulation:68,type:'Liberal democracy'},
+  'Romania':{ready:52,freedom:70,regulation:55,type:'Electoral democracy'},
+  'Chile':{ready:54,freedom:80,regulation:42,type:'Liberal democracy'},
+  'Peru':{ready:40,freedom:68,regulation:30,type:'Electoral democracy'},
+  'Bolivia':{ready:32,freedom:60,regulation:22,type:'Electoral democracy'},
+  'Iraq':{ready:28,freedom:32,regulation:18,type:'Hybrid regime'},
+  'Syria':{ready:15,freedom:8,regulation:10,type:'Consolidated autocracy'},
+  'Kazakhstan':{ready:48,freedom:22,regulation:32,type:'Consolidated autocracy'},
+  'Uzbekistan':{ready:38,freedom:18,regulation:25,type:'Consolidated autocracy'},
+  'North Korea':{ready:10,freedom:2,regulation:5,type:'Totalitarian state'},
+  'Cuba':{ready:30,freedom:12,regulation:20,type:'Single-party state'},
+  'Belarus':{ready:42,freedom:15,regulation:22,type:'Consolidated autocracy'},
+  'Venezuela':{ready:28,freedom:20,regulation:15,type:'Competitive autocracy'},
+  'Myanmar':{ready:25,freedom:14,regulation:12,type:'Military junta'},
+  'Afghanistan':{ready:10,freedom:5,regulation:5,type:'Theocratic autocracy'},
+  'Cameroon':{ready:25,freedom:32,regulation:15,type:'Hybrid regime'},
+  'Zimbabwe':{ready:22,freedom:28,regulation:12,type:'Hybrid regime'},
+  'Sudan':{ready:18,freedom:15,regulation:10,type:'Military junta'},
+};
+
+function aiColor(d){
+  if(!d) return '#d1d5db';
+  const r = d.ready;
+  if(r>=80) return '#1a3a5c';
+  if(r>=65) return '#2563a8';
+  if(r>=50) return '#60a5d8';
+  if(r>=35) return '#93c5e8';
+  return '#cce0f0';
+}
+
+d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(world => {
+  const wrap = document.getElementById('map-inner');
+  wrap.innerHTML = '';
+  const W = 680, H = 360;
+  const svg = d3.select(wrap).append('svg')
+    .attr('id','map-svg')
+    .attr('viewBox',`0 0 ${W} ${H}`)
+    .attr('width','100%');
+
+  const proj = d3.geoNaturalEarth1().scale(108).translate([W/2, H/2]);
+  const path = d3.geoPath(proj);
+
+  svg.append('rect').attr('width',W).attr('height',H).attr('fill','var(--color-background-secondary)');
+
+  const countries = topojson.feature(world, world.objects.countries);
+  const nameMap = {};
+  Object.keys(AI_DATA).forEach(n => nameMap[n.toLowerCase()] = n);
+
+  svg.selectAll('.country')
+    .data(countries.features)
+    .join('path')
+    .attr('class','country')
+    .attr('d', path)
+    .attr('fill', d => {
+      const name = d.properties && d.properties.name;
+      const key = name ? nameMap[name.toLowerCase()] : null;
+      return key ? aiColor(AI_DATA[key]) : '#d1d5db';
+    })
+    .attr('stroke', 'rgba(255,255,255,0.3)')
+    .attr('stroke-width', 0.4)
+    .on('mousemove', function(event, d){
+      const name = d.properties && d.properties.name;
+      const key = name ? nameMap[name.toLowerCase()] : null;
+      const info = key ? AI_DATA[key] : null;
+      const tt = document.getElementById('tooltip');
+      document.getElementById('tt-name').textContent = name || '—';
+      document.getElementById('tt-ready').textContent = info ? info.ready+'/100' : 'N/A';
+      document.getElementById('tt-free').textContent = info ? info.freedom+'/100' : 'N/A';
+      document.getElementById('tt-reg').textContent = info ? info.regulation+'/100' : 'N/A';
+      document.getElementById('tt-type').textContent = info ? info.type : 'N/A';
+      const rect = document.getElementById('map-wrap').getBoundingClientRect();
+      let x = event.clientX - rect.left + 10;
+      let y = event.clientY - rect.top + 10;
+      if(x + 170 > rect.width) x = event.clientX - rect.left - 175;
+      tt.style.left = x+'px'; tt.style.top = y+'px'; tt.style.display = 'block';
+
+      if(info){
+        document.getElementById('detail-bar').innerHTML = `
+          <span class="det-name">${name}</span>
+          <span class="det-item">AI Readiness<span class="det-val">${info.ready}/100</span></span>
+          <span class="det-item">Freedom<span class="det-val">${info.freedom}/100</span></span>
+          <span class="det-item">Regulation<span class="det-val">${info.regulation}/100</span></span>
+          <span class="det-item">Type<span class="det-val">${info.type}</span></span>
+        `;
+      }
+    })
+    .on('mouseleave', function(){
+      document.getElementById('tooltip').style.display = 'none';
+    });
+
+}).catch(()=>{
+  document.getElementById('map-inner').innerHTML = '<div class="load-msg">Map could not load — check network.</div>';
+});
+
+function clamp(v,a,b){return Math.min(b,Math.max(a,v));}
+
+function computeM(s){
+  let freedom = 100 - s.surveillance*0.45 - s.censorship*0.40 + s.regulation*0.12 + s.transparency*0.08;
+  let economy = 50 + s.automation*0.10 + s.welfare*0.25 - (s.automation>60?(s.automation-60)*0.4:0);
+  let trust = 60 - s.surveillance*0.30 - s.censorship*0.25 + s.welfare*0.20 + s.transparency*0.15 - Math.max(0,(s.automation-50)*0.15);
+  let info = 80 - s.censorship*0.20 + s.regulation*0.15 + s.transparency*0.20 - (100-s.censorship)*0.05;
+  let stability = 65 - (100-s.welfare)*0.20 - Math.max(0,s.automation-60)*0.25 + s.regulation*0.10;
+  return {
+    freedom:clamp(freedom,0,100),
+    economy:clamp(economy,0,100),
+    trust:clamp(trust,0,100),
+    info:clamp(info,0,100),
+    stability:clamp(stability,0,100)
+  };
+}
+
+function meetsGoal(val, goal){
+  if(goal==='any') return true;
+  if(goal==='high') return val >= 65;
+  if(goal==='max') return val >= 80;
+  return true;
+}
+
+function scoreSolution(s, goals, tolerance){
+  const m = computeM(s);
+  let score = 0;
+  if(meetsGoal(m.freedom, goals.freedom)) score += 20;
+  if(meetsGoal(m.economy, goals.economy)) score += 20;
+  if(meetsGoal(m.trust, goals.trust)) score += 20;
+  if(meetsGoal(m.info, goals.info)) score += 20;
+  if(meetsGoal(m.stability, goals.stability)) score += 20;
+  if(tolerance==='low') score -= s.surveillance * 0.3;
+  if(tolerance==='high') score += (100-s.welfare)*0.05;
+  return {score, metrics:m};
+}
+
+const SOLUTIONS = [
+  {name:'Nordic Digital Democracy', desc:'Estonia-inspired: high transparency, strong regulation, minimal surveillance',
+   s:{surveillance:20,automation:65,censorship:12,welfare:80,regulation:78,transparency:88},
+   gains:['High freedom','Strong trust','Low inequality'], costs:['Slower AI deployment','High welfare cost']},
+  {name:'Balanced Liberal Model', desc:'USA-UK hybrid: moderate regulation, platform accountability focus',
+   s:{surveillance:45,automation:68,censorship:15,welfare:55,regulation:58,transparency:65},
+   gains:['Good innovation','Reasonable freedom'], costs:['Moderate misinformation','Trust gap']},
+  {name:'Singapore Pragmatist', desc:'Managed efficiency: surveillance accepted for stability and economic gains',
+   s:{surveillance:65,automation:75,censorship:50,welfare:70,regulation:65,transparency:52},
+   gains:['High stability','Strong economy','Low crime'], costs:['Press freedom cost','Chilling effect']},
+  {name:'Regulatory Maximalist', desc:'EU AI Act direction: heavy compliance, algorithmic transparency mandates',
+   s:{surveillance:30,automation:50,censorship:20,welfare:65,regulation:92,transparency:85},
+   gains:['Best trust','High accountability'], costs:['Slower GDP growth','Innovation drag']},
+  {name:'Crisis Stabilizer', desc:'Emergency response mode: targeted surveillance, strong welfare buffer',
+   s:{surveillance:70,automation:40,censorship:45,welfare:85,regulation:55,transparency:40},
+   gains:['High stability','Social cushion'], costs:['Temporary freedom cost','Narrative control risk']},
+  {name:'Dev Economy Leapfrog', desc:'Low-income country path: light regulation, automation for growth, build trust over time',
+   s:{surveillance:35,automation:80,censorship:20,welfare:40,regulation:30,transparency:50},
+   gains:['Fast GDP growth','Low friction'], costs:['Inequality spike','Weak safety net']},
+];
+
+function solve(){
+  const goals = {
+    freedom: document.getElementById('g-freedom').value,
+    economy: document.getElementById('g-economy').value,
+    trust: document.getElementById('g-trust').value,
+    info: document.getElementById('g-info').value,
+    stability: document.getElementById('g-stability').value,
+  };
+  const tolerance = document.getElementById('g-tolerance').value;
+  const scenario = document.getElementById('g-scenario').value;
+
+  const scored = SOLUTIONS.map(sol => ({
+    ...sol,
+    ...scoreSolution(sol.s, goals, tolerance)
+  })).sort((a,b) => b.score - a.score);
+
+  const top3 = scored.slice(0,3);
+  const colors = ['#3b82f6','#a855f7','#22c55e'];
+  const labels = {surveillance:'Surveillance',automation:'Automation',censorship:'Censorship',welfare:'Welfare',regulation:'Regulation',transparency:'Transparency'};
+  const barColors = {surveillance:'#ef4444',automation:'#f59e0b',censorship:'#f97316',welfare:'#22c55e',regulation:'#a855f7',transparency:'#00d4ff'};
+
+  document.getElementById('solver-results').innerHTML = top3.map((sol, i) => `
+    <div class="result-card" style="border-top:2px solid ${colors[i]}">
+      <div class="rc-title">${i===0?'⭐ ':''}<strong>${sol.name}</strong> <span style="font-size:10px;color:var(--color-text-tertiary);font-family:var(--font-mono)">(${Math.round(sol.score)}pts)</span></div>
+      <div style="font-size:11px;color:var(--color-text-secondary);margin-bottom:8px">${sol.desc}</div>
+      ${Object.keys(labels).map(k => `
+        <div class="rc-lever">
+          <span style="min-width:78px">${labels[k]}</span>
+          <div class="rc-bar-wrap"><div class="rc-bar" style="width:${sol.s[k]}%;background:${barColors[k]}"></div></div>
+          <span class="rc-val">${sol.s[k]}</span>
+        </div>
+      `).join('')}
+      <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:4px">
+        ${sol.gains.map(g=>`<span class="tradeoff-tag gain">+${g}</span>`).join('')}
+        ${sol.costs.map(c=>`<span class="tradeoff-tag cost">−${c}</span>`).join('')}
+      </div>
+      <div style="margin-top:8px;font-size:10px;color:var(--color-text-tertiary)">
+        Predicted: Freedom ${Math.round(sol.metrics.freedom)} · Economy ${Math.round(sol.metrics.economy)} · Trust ${Math.round(sol.metrics.trust)} · Info ${Math.round(sol.metrics.info)} · Stability ${Math.round(sol.metrics.stability)}
+      </div>
+    </div>
+  `).join('');
+}
+</script>
+</body>
+</html>

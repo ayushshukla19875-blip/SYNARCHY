@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Governance Sandbox</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --bg:#0a0c10;--bg2:#111318;--bg3:#181c22;--bg4:#1e232b;
+    --border:#2a3040;--border2:#3a4555;
+    --text:#e8edf5;--text2:#8a97b0;--text3:#4a5568;
+    --accent:#00d4ff;--accent2:#0090cc;
+    --green:#22c55e;--red:#ef4444;--amber:#f59e0b;--purple:#a855f7;
+    --teal:#14b8a6;--coral:#f97316;
+    --font:'Space Grotesk',sans-serif;--mono:'JetBrains Mono',monospace;
+  }
+  body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;line-height:1.5;min-height:100vh}
+
+  .header{background:linear-gradient(135deg,#0a0c10 0%,#0d1520 50%,#0a0c10 100%);border-bottom:1px solid var(--border);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+  .header-title{display:flex;align-items:center;gap:12px}
+  .logo{width:32px;height:32px;background:linear-gradient(135deg,var(--accent),var(--purple));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#000;font-family:var(--mono)}
+  .header h1{font-size:16px;font-weight:600;letter-spacing:-0.3px}
+  .header-sub{font-size:11px;color:var(--text2);font-family:var(--mono)}
+  .nav{display:flex;gap:4px}
+  .nav-btn{background:none;border:1px solid transparent;color:var(--text2);padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer;font-family:var(--font);transition:all .2s}
+  .nav-btn:hover{color:var(--text);background:var(--bg3)}
+  .nav-btn.active{color:var(--accent);border-color:var(--border2);background:var(--bg3)}
+
+  .main{display:grid;grid-template-columns:320px 1fr;gap:0;height:calc(100vh - 61px);overflow:hidden}
+  .sidebar{background:var(--bg2);border-right:1px solid var(--border);overflow-y:auto;padding:20px}
+  .content{overflow-y:auto;padding:20px;background:var(--bg)}
+
+  .section-label{font-size:10px;font-weight:600;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+
+  .regime-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px}
+  .regime-btn{background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:8px 10px;border-radius:8px;font-size:11px;cursor:pointer;font-family:var(--font);transition:all .2s;text-align:left}
+  .regime-btn:hover{border-color:var(--border2);color:var(--text)}
+  .regime-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,.07)}
+  .regime-btn .flag{font-size:16px;display:block;margin-bottom:4px}
+  .regime-btn .rname{font-weight:600;font-size:11px}
+  .regime-btn .rdesc{font-size:10px;color:var(--text3);margin-top:2px}
+
+  .slider-row{margin-bottom:16px}
+  .slider-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+  .slider-label{font-size:12px;font-weight:500;color:var(--text)}
+  .slider-info{font-size:10px;color:var(--text3);margin-top:2px}
+  .slider-val{font-size:13px;font-weight:600;font-family:var(--mono);color:var(--accent)}
+  input[type=range]{width:100%;height:4px;-webkit-appearance:none;background:var(--border);border-radius:2px;outline:none;cursor:pointer}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;background:var(--accent);border-radius:50%;cursor:pointer;box-shadow:0 0 8px rgba(0,212,255,.4)}
+  input[type=range].red-slider::-webkit-slider-thumb{background:var(--red);box-shadow:0 0 8px rgba(239,68,68,.4)}
+  input[type=range].amber-slider::-webkit-slider-thumb{background:var(--amber);box-shadow:0 0 8px rgba(245,158,11,.4)}
+  input[type=range].purple-slider::-webkit-slider-thumb{background:var(--purple);box-shadow:0 0 8px rgba(168,85,247,.4)}
+  input[type=range].green-slider::-webkit-slider-thumb{background:var(--green);box-shadow:0 0 8px rgba(34,197,94,.4)}
+
+  .time-row{display:flex;align-items:center;gap:12px;margin-bottom:20px;background:var(--bg3);padding:12px;border-radius:8px;border:1px solid var(--border)}
+  .time-label{font-size:11px;color:var(--text2);white-space:nowrap}
+  .time-val{font-size:16px;font-weight:700;font-family:var(--mono);color:var(--amber);min-width:60px;text-align:right}
+
+  .metrics-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+  .metric-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;position:relative;overflow:hidden}
+  .metric-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+  .metric-card.freedom::before{background:var(--accent)}
+  .metric-card.economy::before{background:var(--green)}
+  .metric-card.trust::before{background:var(--amber)}
+  .metric-card.info::before{background:var(--coral)}
+  .metric-card.stability::before{background:var(--purple)}
+  .metric-card.psych::before{background:var(--red)}
+  .metric-label{font-size:10px;font-weight:600;letter-spacing:.8px;color:var(--text3);text-transform:uppercase;margin-bottom:8px}
+  .metric-val{font-size:28px;font-weight:700;font-family:var(--mono);line-height:1}
+  .metric-sub{font-size:11px;color:var(--text2);margin-top:4px}
+  .metric-trend{font-size:11px;margin-top:6px;font-weight:500}
+  .trend-up{color:var(--green)}
+  .trend-down{color:var(--red)}
+  .trend-neutral{color:var(--text3)}
+  .metric-bar{height:3px;background:var(--border);border-radius:2px;margin-top:8px;overflow:hidden}
+  .metric-bar-fill{height:100%;border-radius:2px;transition:width .6s ease}
+
+  .panel{background:var(--bg2);border:1px solid var(--border);border-radius:10px;margin-bottom:16px;overflow:hidden}
+  .panel-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+  .panel-title{font-size:13px;font-weight:600}
+  .panel-tag{font-size:10px;background:var(--bg3);border:1px solid var(--border2);color:var(--text2);padding:2px 8px;border-radius:4px;font-family:var(--mono)}
+  .panel-body{padding:16px}
+
+  .chart-wrap{position:relative;height:220px;width:100%}
+  .chart-small{position:relative;height:160px;width:100%}
+
+  .tradeoff-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .tradeoff-item{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px}
+  .tradeoff-name{font-size:11px;color:var(--text2);margin-bottom:4px}
+  .tradeoff-val{font-size:16px;font-weight:700;font-family:var(--mono)}
+  .tradeoff-desc{font-size:10px;color:var(--text3);margin-top:2px}
+
+  .alert-box{border-radius:8px;padding:10px 12px;margin-bottom:8px;font-size:12px;border:1px solid}
+  .alert-warn{background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.3);color:var(--amber)}
+  .alert-danger{background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.3);color:#ff7676}
+  .alert-ok{background:rgba(34,197,94,.08);border-color:rgba(34,197,94,.3);color:var(--green)}
+  .alert-info{background:rgba(0,212,255,.08);border-color:rgba(0,212,255,.3);color:var(--accent)}
+
+  .source-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .source-item{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px 10px}
+  .source-name{font-size:11px;font-weight:600;color:var(--accent);margin-bottom:2px}
+  .source-desc{font-size:10px;color:var(--text3)}
+
+  .tab-row{display:flex;gap:2px;margin-bottom:16px;background:var(--bg3);padding:4px;border-radius:8px;border:1px solid var(--border)}
+  .tab{flex:1;background:none;border:none;color:var(--text2);padding:6px;border-radius:6px;font-size:12px;cursor:pointer;font-family:var(--font);transition:all .2s}
+  .tab.active{background:var(--bg2);color:var(--text);border:1px solid var(--border)}
+
+  .regime-compare{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:16px}
+  .regime-col{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center}
+  .regime-col.highlight{border-color:var(--accent)}
+  .regime-col .rn{font-size:11px;font-weight:600;margin-bottom:8px}
+  .regime-col .flag-big{font-size:24px;margin-bottom:4px}
+  .mini-bar{height:4px;border-radius:2px;margin:3px 0;position:relative;background:var(--border)}
+  .mini-bar-fill{position:absolute;left:0;top:0;height:100%;border-radius:2px}
+
+  .event-list{list-style:none}
+  .event-item{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);align-items:flex-start}
+  .event-item:last-child{border-bottom:none}
+  .event-dot{width:8px;height:8px;border-radius:50%;margin-top:4px;flex-shrink:0}
+  .event-text{font-size:12px;color:var(--text2)}
+  .event-yr{font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:2px}
+
+  .sir-wrap{position:relative;height:180px}
+
+  .bottom-bar{background:var(--bg2);border-top:1px solid var(--border);padding:10px 24px;display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--text3)}
+  .bb-right{display:flex;gap:16px}
+  .status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;margin-right:4px;box-shadow:0 0 6px var(--green)}
+
+  .page{display:none}
+  .page.active{display:block}
+
+  .cite{font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:4px}
+  .cite a{color:var(--accent2);text-decoration:none}
+
+  .formula-box{background:var(--bg4);border:1px solid var(--border);border-radius:6px;padding:10px;margin-top:8px;font-family:var(--mono);font-size:11px;color:var(--teal)}
+
+  .gdp-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px}
+  .gdp-row:last-child{border-bottom:none}
+  .gdp-label{color:var(--text2)}
+  .gdp-val{font-family:var(--mono);font-weight:500}
+
+  .pulse{animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+
+  ::-webkit-scrollbar{width:4px}
+  ::-webkit-scrollbar-track{background:var(--bg)}
+  ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-title">
+    <div class="logo">⚖</div>
+    <div>
+      <h1>AI Governance Sandbox</h1>
+      <div class="header-sub">Research-grade policy simulation · V-Dem · Freedom House · Gini · World Bank indices</div>
+    </div>
+  </div>
+  <div class="nav">
+    <button class="nav-btn active" onclick="showPage('simulator')">Simulator</button>
+    <button class="nav-btn" onclick="showPage('compare')">Regime Compare</button>
+    <button class="nav-btn" onclick="showPage('narrative')">Narrative Engine</button>
+    <button class="nav-btn" onclick="showPage('methodology')">Methodology</button>
+  </div>
+</div>
+
+<div id="pg-simulator" class="page active">
+<div class="main">
+<div class="sidebar">
+
+  <div class="section-label">Historical Regime Presets</div>
+  <div class="regime-grid">
+    <button class="regime-btn" onclick="loadRegime('china')" id="btn-china">
+      <span class="flag">🇨🇳</span>
+      <div class="rname">China</div>
+      <div class="rdesc">Social Credit + High Control</div>
+    </button>
+    <button class="regime-btn" onclick="loadRegime('estonia')" id="btn-estonia">
+      <span class="flag">🇪🇪</span>
+      <div class="rname">Estonia</div>
+      <div class="rdesc">e-Governance model</div>
+    </button>
+    <button class="regime-btn" onclick="loadRegime('singapore')" id="btn-singapore">
+      <span class="flag">🇸🇬</span>
+      <div class="rname">Singapore</div>
+      <div class="rdesc">Managed democracy</div>
+    </button>
+    <button class="regime-btn" onclick="loadRegime('usa')" id="btn-usa">
+      <span class="flag">🇺🇸</span>
+      <div class="rname">USA</div>
+      <div class="rdesc">Liberal + platform capitalism</div>
+    </button>
+    <button class="regime-btn" onclick="loadRegime('hungary')" id="btn-hungary">
+      <span class="flag">🇭🇺</span>
+      <div class="rname">Hungary</div>
+      <div class="rdesc">Electoral authoritarianism</div>
+    </button>
+    <button class="regime-btn active" onclick="loadRegime('custom')" id="btn-custom">
+      <span class="flag">⚙️</span>
+      <div class="rname">Custom</div>
+      <div class="rdesc">Design your own</div>
+    </button>
+  </div>
+
+  <div class="section-label">Policy Levers</div>
+
+  <div class="slider-row">
+    <div class="slider-header">
+      <div>
+        <div class="slider-label">🔭 Surveillance Level</div>
+        <div class="slider-info">Facial recognition · data collection · monitoring</div>
+      </div>
+      <span class="slider-val" id="lbl-surveillance">50</span>
+    </div>
+    <input type="range" min="0" max="100" value="50" id="sl-surveillance" oninput="onSlide()" class="red-slider">
+  </div>
+
+  <div class="slider-row">
+    <div class="slider-header">
+      <div>
+        <div class="slider-label">🤖 AI Automation</div>
+        <div class="slider-info">Labor displacement · productivity gains</div>
+      </div>
+      <span class="slider-val" id="lbl-automation">40</span>
+    </div>
+    <input type="range" min="0" max="100" value="40" id="sl-automation" oninput="onSlide()" class="amber-slider">
+  </div>
+
+  <div class="slider-row">
+    <div class="slider-header">
+      <div>
+        <div class="slider-label">📡 Censorship Strictness</div>
+        <div class="slider-info">Content moderation · press freedom</div>
+      </div>
+      <span class="slider-val" id="lbl-censorship">30</span>
+    </div>
+    <input type="range" min="0" max="100" value="30" id="sl-censorship" oninput="onSlide()" class="red-slider">
+  </div>
+
+  <div class="slider-row">
+    <div class="slider-header">
+      <div>
+        <div class="slider-label">🛡️ Welfare Support</div>
+        <div class="slider-info">Social safety net · UBI · retraining</div>
+      </div>
+      <span class="slider-val" id="lbl-welfare">55</span>
+    </div>
+    <input type="range" min="0" max="100" value="55" id="sl-welfare" oninput="onSlide()" class="green-slider">
+  </div>
+
+  <div class="slider-row">
+    <div class="slider-header">
+      <div>
+        <div class="slider-label">⚖️ AI Regulation</div>
+        <div class="slider-info">Legal frameworks · liability · auditing</div>
+      </div>
+      <span class="slider-val" id="lbl-regulation">45</span>
+    </div>
+    <input type="range" min="0" max="100" value="45" id="sl-regulation" oninput="onSlide()" class="purple-slider">
+  </div>
+
+  <div class="slider-row">
+    <div class="slider-header">
+      <div>
+        <div class="slider-label">🌐 Algorithmic Transparency</div>
+        <div class="slider-info">Explainability mandates · audit rights</div>
+      </div>
+      <span class="slider-val" id="lbl-transparency">40</span>
+    </div>
+    <input type="range" min="0" max="100" value="40" id="sl-transparency" oninput="onSlide()" class="green-slider">
+  </div>
+
+  <div class="section-label" style="margin-top:16px">Time Horizon</div>
+  <div class="time-row">
+    <span class="time-label">Project to year:</span>
+    <input type="range" min="0" max="15" value="0" id="sl-time" oninput="onSlide()" style="flex:1">
+    <span class="time-val" id="lbl-time">t=0</span>
+  </div>
+
+  <div class="section-label">Scenario Context</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+    <button class="regime-btn" onclick="setScenario('demo')" id="sc-demo" style="background:rgba(0,212,255,.07);border-color:var(--accent)">
+      <span class="flag">🗳️</span><div class="rname">Democracy</div>
+    </button>
+    <button class="regime-btn" onclick="setScenario('auth')" id="sc-auth">
+      <span class="flag">🏛️</span><div class="rname">Authoritarian</div>
+    </button>
+    <button class="regime-btn" onclick="setScenario('dev')" id="sc-dev">
+      <span class="flag">🌍</span><div class="rname">Dev. Economy</div>
+    </button>
+    <button class="regime-btn" onclick="setScenario('crisis')" id="sc-crisis">
+      <span class="flag">⚡</span><div class="rname">Crisis State</div>
+    </button>
+  </div>
+
+</div>
+
+<div class="content">
+  <div class="metrics-grid">
+    <div class="metric-card freedom">
+      <div class="metric-label">Freedom Index</div>
+      <div class="metric-val" id="m-freedom">72</div>
+      <div class="metric-sub">V-Dem / Freedom House scale</div>
+      <div class="metric-trend" id="t-freedom">→ Stable</div>
+      <div class="metric-bar"><div class="metric-bar-fill" id="b-freedom" style="width:72%;background:var(--accent)"></div></div>
+    </div>
+    <div class="metric-card economy">
+      <div class="metric-label">Economic Stability</div>
+      <div class="metric-val" id="m-economy">63</div>
+      <div class="metric-sub">GDP growth · Gini · employment</div>
+      <div class="metric-trend" id="t-economy">→ Stable</div>
+      <div class="metric-bar"><div class="metric-bar-fill" id="b-economy" style="width:63%;background:var(--green)"></div></div>
+    </div>
+    <div class="metric-card trust">
+      <div class="metric-label">Public Trust</div>
+      <div class="metric-val" id="m-trust">58</div>
+      <div class="metric-sub">Edelman / Pew Research basis</div>
+      <div class="metric-trend" id="t-trust">→ Stable</div>
+      <div class="metric-bar"><div class="metric-bar-fill" id="b-trust" style="width:58%;background:var(--amber)"></div></div>
+    </div>
+    <div class="metric-card info">
+      <div class="metric-label">Info Integrity</div>
+      <div class="metric-val" id="m-info">55</div>
+      <div class="metric-sub">Misinformation · narrative control</div>
+      <div class="metric-trend" id="t-info">→ Stable</div>
+      <div class="metric-bar"><div class="metric-bar-fill" id="b-info" style="width:55%;background:var(--coral)"></div></div>
+    </div>
+    <div class="metric-card stability">
+      <div class="metric-label">Social Stability</div>
+      <div class="metric-val" id="m-stability">67</div>
+      <div class="metric-sub">Unrest · protests · cohesion</div>
+      <div class="metric-trend" id="t-stability">→ Stable</div>
+      <div class="metric-bar"><div class="metric-bar-fill" id="b-stability" style="width:67%;background:var(--purple)"></div></div>
+    </div>
+    <div class="metric-card psych">
+      <div class="metric-label">Psycho-Social Health</div>
+      <div class="metric-val" id="m-psych">61</div>
+      <div class="metric-sub">Fear · anxiety · polarization</div>
+      <div class="metric-trend" id="t-psych">→ Stable</div>
+      <div class="metric-bar"><div class="metric-bar-fill" id="b-psych" style="width:61%;background:var(--red)"></div></div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Metric Trajectory Over Time</span>
+        <span class="panel-tag">t=0 → t=15 years</span>
+      </div>
+      <div class="panel-body">
+        <div class="chart-wrap">
+          <canvas id="timeChart" role="img" aria-label="Line chart showing how governance metrics evolve over 15 years"></canvas>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;font-size:11px">
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:3px;background:var(--accent);display:inline-block;border-radius:2px"></span><span style="color:var(--text2)">Freedom</span></span>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:3px;background:var(--green);display:inline-block;border-radius:2px"></span><span style="color:var(--text2)">Economy</span></span>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:3px;background:var(--amber);display:inline-block;border-radius:2px"></span><span style="color:var(--text2)">Trust</span></span>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:3px;background:var(--coral);display:inline-block;border-radius:2px"></span><span style="color:var(--text2)">Info</span></span>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:3px;background:var(--purple);display:inline-block;border-radius:2px"></span><span style="color:var(--text2)">Stability</span></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Consequence Alerts</span>
+        <span class="panel-tag">Real-time analysis</span>
+      </div>
+      <div class="panel-body" id="alerts-panel">
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Economic Breakdown</span>
+        <span class="panel-tag">World Bank basis</span>
+      </div>
+      <div class="panel-body">
+        <div id="econ-table"></div>
+        <div class="chart-small" style="margin-top:12px">
+          <canvas id="econChart" role="img" aria-label="Bar chart showing economic indicators"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Policy Tradeoffs</span>
+        <span class="panel-tag">Unintended consequences</span>
+      </div>
+      <div class="panel-body">
+        <div class="tradeoff-grid" id="tradeoffs"></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+
+<div id="pg-compare" class="page">
+<div style="padding:24px;max-width:1200px;margin:0 auto">
+  <div class="section-label" style="margin-bottom:16px">Real-World Regime Comparison — AI Governance Scores</div>
+  <div class="regime-compare">
+    <div class="regime-col"><div class="flag-big">🇨🇳</div><div class="rn">China</div><div id="rc-china"></div></div>
+    <div class="regime-col"><div class="flag-big">🇪🇪</div><div class="rn">Estonia</div><div id="rc-estonia"></div></div>
+    <div class="regime-col highlight"><div class="flag-big">🇸🇬</div><div class="rn">Singapore</div><div id="rc-singapore"></div></div>
+    <div class="regime-col"><div class="flag-big">🇺🇸</div><div class="rn">USA</div><div id="rc-usa"></div></div>
+    <div class="regime-col"><div class="flag-big">🇭🇺</div><div class="rn">Hungary</div><div id="rc-hungary"></div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <div class="panel">
+      <div class="panel-header"><span class="panel-title">Multi-Axis Radar — All Regimes</span></div>
+      <div class="panel-body">
+        <div style="position:relative;height:320px"><canvas id="radarChart" role="img" aria-label="Radar chart comparing 5 regimes across 6 governance dimensions"></canvas></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-header"><span class="panel-title">Historical Events & Causal Links</span></div>
+      <div class="panel-body">
+        <div class="tab-row">
+          <button class="tab active" onclick="switchTab('china-events')">China</button>
+          <button class="tab" onclick="switchTab('estonia-events')">Estonia</button>
+          <button class="tab" onclick="switchTab('sg-events')">Singapore</button>
+          <button class="tab" onclick="switchTab('hu-events')">Hungary</button>
+        </div>
+        <ul class="event-list" id="events-display"></ul>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div id="pg-narrative" class="page">
+<div style="padding:24px;max-width:1200px;margin:0 auto">
+  <div class="section-label" style="margin-bottom:16px">Narrative Propagation Engine — SIR Model of Misinformation Spread</div>
+  <div style="display:grid;grid-template-columns:280px 1fr;gap:16px">
+    <div>
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title">Spread Parameters</span></div>
+        <div class="panel-body">
+          <div class="slider-row">
+            <div class="slider-header"><div class="slider-label">Initial Seed %</div><span class="slider-val" id="lbl-seed">2</span></div>
+            <input type="range" min="1" max="20" value="2" id="sl-seed" oninput="updateSIR()">
+          </div>
+          <div class="slider-row">
+            <div class="slider-header"><div class="slider-label">β Transmission Rate</div><span class="slider-val" id="lbl-beta">0.35</span></div>
+            <input type="range" min="10" max="80" value="35" id="sl-beta" oninput="updateSIR()">
+          </div>
+          <div class="slider-row">
+            <div class="slider-header"><div class="slider-label">γ Recovery (Fact-check)</div><span class="slider-val" id="lbl-gamma">0.10</span></div>
+            <input type="range" min="5" max="50" value="10" id="sl-gamma" oninput="updateSIR()">
+          </div>
+          <div class="slider-row">
+            <div class="slider-header"><div class="slider-label">Platform Amplification</div><span class="slider-val" id="lbl-amplify">3.0x</span></div>
+            <input type="range" min="10" max="80" value="30" id="sl-amplify" oninput="updateSIR()">
+          </div>
+          <div class="slider-row">
+            <div class="slider-header"><div class="slider-label">Censorship Level</div><span class="slider-val" id="lbl-censor">30</span></div>
+            <input type="range" min="0" max="100" value="30" id="sl-censor" oninput="updateSIR()">
+          </div>
+
+          <div style="margin-top:16px;background:var(--bg3);border-radius:8px;padding:10px;font-size:11px;color:var(--text2)">
+            <b style="color:var(--text);display:block;margin-bottom:6px">SIR Model Basis</b>
+            S → Susceptible · I → Infected (believing misinfo) · R → Recovered (corrected)
+            <div class="formula-box" style="margin-top:6px">
+              dS/dt = -β·S·I·amp<br>
+              dI/dt = β·S·I·amp - γ·I·(cens/50)<br>
+              dR/dt = γ·I·(cens/50)
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Narrative Spread Over 90 Days</span>
+          <span class="panel-tag" id="sir-peak">Peak infection: calculating...</span>
+        </div>
+        <div class="panel-body">
+          <div style="position:relative;height:260px">
+            <canvas id="sirChart" role="img" aria-label="SIR model showing susceptible infected recovered over 90 days"></canvas>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;font-size:11px">
+            <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:3px;background:#3b82f6;display:inline-block"></span><span style="color:var(--text2)">Susceptible</span></span>
+            <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:3px;background:#ef4444;display:inline-block"></span><span style="color:var(--text2)">Infected (believing misinfo)</span></span>
+            <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:3px;background:#22c55e;display:inline-block"></span><span style="color:var(--text2)">Recovered (corrected)</span></span>
+          </div>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:16px">
+        <div class="panel-header"><span class="panel-title">Governance Intervention Analysis</span></div>
+        <div class="panel-body">
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px" id="intervention-grid"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div id="pg-methodology" class="page">
+<div style="padding:24px;max-width:900px;margin:0 auto">
+  <div class="section-label" style="margin-bottom:16px">Methodology & Source Documentation</div>
+  <div class="panel" style="margin-bottom:16px">
+    <div class="panel-header"><span class="panel-title">Index Sources</span></div>
+    <div class="panel-body">
+      <div class="source-grid">
+        <div class="source-item">
+          <div class="source-name">V-Dem Dataset</div>
+          <div class="source-desc">Varieties of Democracy · polyarchy score · civil liberties · electoral · deliberative components</div>
+        </div>
+        <div class="source-item">
+          <div class="source-name">Freedom House</div>
+          <div class="source-desc">Freedom in the World · Political rights (0–40) · Civil liberties (0–60) · Net freedom score</div>
+        </div>
+        <div class="source-item">
+          <div class="source-name">World Bank WDI</div>
+          <div class="source-desc">Gini coefficient · unemployment · GDP per capita growth · labor market indicators</div>
+        </div>
+        <div class="source-item">
+          <div class="source-name">Edelman Trust Barometer</div>
+          <div class="source-desc">28-country annual survey · institutional trust (government, media, NGOs, business)</div>
+        </div>
+        <div class="source-item">
+          <div class="source-name">Pew Research Center</div>
+          <div class="source-desc">Global Attitudes · Technology & Society · AI sentiment data across 20+ countries</div>
+        </div>
+        <div class="source-item">
+          <div class="source-name">Oxford Internet Institute</div>
+          <div class="source-desc">Computational Propaganda Project · Platform manipulation data · Bot network studies</div>
+        </div>
+        <div class="source-item">
+          <div class="source-name">OECD AI Policy Observatory</div>
+          <div class="source-desc">oecd.ai · 800+ AI policy initiatives tracked · National AI strategies · Regulation database</div>
+        </div>
+        <div class="source-item">
+          <div class="source-name">Oxford Government AI Readiness</div>
+          <div class="source-desc">181-country AI Readiness Index · Government · Technology · Data & Infrastructure pillars</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-bottom:16px">
+    <div class="panel-header"><span class="panel-title">Freedom Index Formula</span></div>
+    <div class="panel-body">
+      <p style="font-size:12px;color:var(--text2);margin-bottom:8px">Based on Freedom House methodology. Surveillance and censorship apply negative multiplicative pressure; regulation and transparency provide partial mitigation.</p>
+      <div class="formula-box">
+        Freedom = 100<br>
+        - (surveillance × 0.45)<br>
+        - (censorship × 0.40)<br>
+        + (regulation × 0.12)<br>
+        + (transparency × 0.08)<br>
+        <br>
+        Time decay: high surveillance creates institutional lock-in<br>
+        → additional -0.8 per year if surveillance > 60
+      </div>
+      <div class="cite">Basis: Freedom House Political Rights + Civil Liberties scoring rubric · V-Dem liberal component index</div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-bottom:16px">
+    <div class="panel-header"><span class="panel-title">Economic Stability Formula</span></div>
+    <div class="panel-body">
+      <p style="font-size:12px;color:var(--text2);margin-bottom:8px">Automation creates a productivity gain offset by inequality and unemployment. Welfare and regulation dampen negative effects with realistic lag.</p>
+      <div class="formula-box">
+        Economy = 50<br>
+        + (automation × 0.20)  [productivity gain]<br>
+        - (automation × 0.15)  [displacement cost]<br>
+        + (welfare × 0.25)     [safety net buffer]<br>
+        - (gini_penalty)        [inequality drag]<br>
+        <br>
+        gini_penalty = automation > 60 ? (automation-60) × 0.4 : 0<br>
+        <br>
+        Short term (t=0): automation boost dominates<br>
+        Long term (t>5): displacement and inequality accumulate
+      </div>
+      <div class="cite">Basis: World Bank labor market analysis · Acemoglu & Restrepo (2019) "Automation and New Tasks" · OECD "Future of Work"</div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-bottom:16px">
+    <div class="panel-header"><span class="panel-title">Public Trust Formula</span></div>
+    <div class="panel-body">
+      <div class="formula-box">
+        Trust = 60<br>
+        - (surveillance × 0.30)   [chilling effect]<br>
+        - (censorship × 0.25)     [perceived manipulation]<br>
+        + (welfare × 0.20)        [social contract]<br>
+        + (transparency × 0.15)   [accountability]<br>
+        - (automation_shock)       [economic anxiety]<br>
+        <br>
+        automation_shock = max(0, (automation - 50) × 0.15)<br>
+        <br>
+        Scenario modifier: authoritarian context<br>
+        → surveillance has 1.4× impact on trust erosion
+      </div>
+      <div class="cite">Basis: Edelman Trust Barometer 2024 · Pew Research "AI and Human Enhancement" 2023 · Levi & Stoker (2000) trust theory</div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-bottom:16px">
+    <div class="panel-header"><span class="panel-title">Limitations & Caveats</span></div>
+    <div class="panel-body">
+      <div class="alert-box alert-warn">This is a policy modeling tool, not a predictive simulation. Formulas encode empirical tendencies from research literature, not deterministic laws. Real outcomes depend on implementation quality, historical path dependencies, and contingent events not captured here.</div>
+      <div class="alert-box alert-info">The SIR model for misinformation is adapted from epidemiological models. It captures spread dynamics but does not model individual psychology, algorithmic recommendation effects, or cross-platform dynamics at full fidelity.</div>
+      <div class="alert-box alert-ok">All preset regime values are approximations calibrated to published index scores. They represent governance patterns, not identical reproductions of real measurements which change year to year.</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="bottom-bar">
+  <span><span class="status-dot pulse"></span>Live policy engine · formulas grounded in V-Dem · Freedom House · World Bank · Edelman indices</span>
+  <div class="bb-right">
+    <span>V-Dem 2024</span>
+    <span>Freedom House 2024</span>
+    <span>World Bank WDI 2023</span>
+    <span>OECD AI Policy 2024</span>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+let timeChart, econChart, radarChart, sirChart;
+let scenario = 'demo';
+let activeRegime = 'custom';
+let tabActive = 'china-events';
+
+const REGIMES = {
+  china:   {surveillance:92,automation:75,censorship:95,welfare:45,regulation:60,transparency:15, name:'China'},
+  estonia: {surveillance:25,automation:65,censorship:10,welfare:80,regulation:75,transparency:88, name:'Estonia'},
+  singapore:{surveillance:68,automation:72,censorship:55,welfare:70,regulation:65,transparency:55, name:'Singapore'},
+  usa:     {surveillance:50,automation:68,censorship:12,welfare:40,regulation:38,transparency:62, name:'USA'},
+  hungary: {surveillance:60,automation:45,censorship:72,welfare:50,regulation:35,transparency:28, name:'Hungary'},
+  custom:  {surveillance:50,automation:40,censorship:30,welfare:55,regulation:45,transparency:40, name:'Custom'},
+};
+
+const SCENARIO_MODS = {
+  demo:  {trustMult:1.0, freedomMult:1.0, stabilityMult:1.0, label:'Democracy'},
+  auth:  {trustMult:0.75, freedomMult:0.7, stabilityMult:1.15, label:'Authoritarian'},
+  dev:   {trustMult:0.85, freedomMult:0.9, stabilityMult:0.85, label:'Dev. Economy'},
+  crisis:{trustMult:0.65, freedomMult:0.8, stabilityMult:0.7,  label:'Crisis State'},
+};
+
+function getSliders(){
+  return {
+    surveillance: +document.getElementById('sl-surveillance').value,
+    automation:   +document.getElementById('sl-automation').value,
+    censorship:   +document.getElementById('sl-censorship').value,
+    welfare:      +document.getElementById('sl-welfare').value,
+    regulation:   +document.getElementById('sl-regulation').value,
+    transparency: +document.getElementById('sl-transparency').value,
+    time:         +document.getElementById('sl-time').value,
+  };
+}
+
+function clamp(v,a,b){return Math.min(b,Math.max(a,v));}
+
+function computeMetrics(s, t){
+  const sc = SCENARIO_MODS[scenario];
+  const yr = t;
+
+  let freedom = 100 - (s.surveillance*0.45) - (s.censorship*0.40) + (s.regulation*0.12) + (s.transparency*0.08);
+  if(s.surveillance > 60) freedom -= (yr * 0.8);
+  if(scenario === 'auth') freedom *= 0.88;
+  freedom = clamp(freedom, 0, 100);
+
+  let gini_penalty = s.automation > 60 ? (s.automation-60)*0.4 : 0;
+  let economy = 50 + (s.automation*0.20) - (s.automation*0.10) + (s.welfare*0.25) - gini_penalty;
+  let longTermPenalty = yr > 5 ? (yr-5) * (s.automation > 50 ? 0.6 : 0.1) : 0;
+  economy -= longTermPenalty;
+  economy = clamp(economy, 0, 100);
+
+  let auto_shock = Math.max(0, (s.automation-50)*0.15);
+  let trust = 60 - (s.surveillance*0.30) - (s.censorship*0.25) + (s.welfare*0.20) + (s.transparency*0.15) - auto_shock;
+  trust *= sc.trustMult;
+  if(yr > 3 && s.surveillance > 60) trust -= yr * 0.7;
+  trust = clamp(trust, 0, 100);
+
+  let info = 80 - (s.censorship*0.20) + (s.regulation*0.15) + (s.transparency*0.20) - ((100-s.censorship)*0.05);
+  if(s.censorship < 20) info -= 15;
+  if(s.censorship > 70) info -= 10;
+  info = clamp(info, 0, 100);
+
+  let stability = 65 - ((100-s.welfare)*0.20) - (Math.max(0,s.automation-60)*0.25) + (s.regulation*0.10);
+  stability *= sc.stabilityMult;
+  if(yr > 4 && economy < 50) stability -= (yr-4)*0.8;
+  stability = clamp(stability, 0, 100);
+
+  let psych = 80 - (s.surveillance*0.35) - (s.censorship*0.15) - (auto_shock*1.2) + (s.welfare*0.12);
+  if(yr > 2) psych -= yr * 0.4 * (s.surveillance/100);
+  psych = clamp(psych, 0, 100);
+
+  return {freedom, economy, trust, info, stability, psych};
+}
+
+function onSlide(){
+  const s = getSliders();
+  document.getElementById('lbl-surveillance').textContent = s.surveillance;
+  document.getElementById('lbl-automation').textContent = s.automation;
+  document.getElementById('lbl-censorship').textContent = s.censorship;
+  document.getElementById('lbl-welfare').textContent = s.welfare;
+  document.getElementById('lbl-regulation').textContent = s.regulation;
+  document.getElementById('lbl-transparency').textContent = s.transparency;
+  document.getElementById('lbl-time').textContent = s.time === 0 ? 't=0' : 't='+s.time+'yr';
+
+  const m = computeMetrics(s, s.time);
+  const m0 = computeMetrics(s, 0);
+
+  const pairs = [
+    ['freedom', m.freedom, m0.freedom, 'var(--accent)'],
+    ['economy', m.economy, m0.economy, 'var(--green)'],
+    ['trust', m.trust, m0.trust, 'var(--amber)'],
+    ['info', m.info, m0.info, 'var(--coral)'],
+    ['stability', m.stability, m0.stability, 'var(--purple)'],
+    ['psych', m.psych, m0.psych, 'var(--red)'],
+  ];
+
+  pairs.forEach(([key, val, base, color]) => {
+    document.getElementById('m-'+key).textContent = Math.round(val);
+    document.getElementById('b-'+key).style.width = Math.round(val) + '%';
+    const diff = Math.round(val - base);
+    const tEl = document.getElementById('t-'+key);
+    if(diff > 2) { tEl.textContent = '↑ +'+diff+' ('+s.time+'yr)'; tEl.className='metric-trend trend-up'; }
+    else if(diff < -2) { tEl.textContent = '↓ '+diff+' ('+s.time+'yr)'; tEl.className='metric-trend trend-down'; }
+    else { tEl.textContent = '→ Stable'; tEl.className='metric-trend trend-neutral'; }
+  });
+
+  updateAlerts(s, m);
+  updateEconTable(s, m);
+  updateTradeoffs(s, m);
+  updateTimeChart(s);
+}
+
+function updateAlerts(s, m){
+  const panel = document.getElementById('alerts-panel');
+  const alerts = [];
+  if(s.surveillance > 70) alerts.push({type:'danger', text:'🔴 High surveillance ('+s.surveillance+'): Chilling effect on free expression. Research shows >70 correlation with trust erosion (Freedom House 2024).'});
+  if(s.automation > 65 && s.welfare < 40) alerts.push({type:'danger', text:'🔴 High automation + weak welfare: Gini coefficient worsening predicted. Acemoglu (2019) finds net job displacement above 60% automation threshold.'});
+  if(s.censorship > 60) alerts.push({type:'warn', text:'⚠️ Censorship ('+s.censorship+'): May reduce misinformation short-term but creates narrative monopoly risk. V-Dem shows press freedom erosion above 60.'});
+  if(s.censorship < 15 && s.regulation < 20) alerts.push({type:'warn', text:'⚠️ Very low censorship + low regulation: Misinformation spreads unchecked. Oxford OII data shows high amplification in unregulated environments.'});
+  if(m.trust < 35) alerts.push({type:'danger', text:'🔴 Public trust critically low ('+Math.round(m.trust)+'): Edelman research shows <35 correlates with institutional delegitimization and protest escalation.'});
+  if(m.economy < 40) alerts.push({type:'warn', text:'⚠️ Economic instability ('+Math.round(m.economy)+'): World Bank indicators suggest GDP contraction risk when automation-welfare balance inverts.'});
+  if(s.regulation > 70 && s.transparency > 70) alerts.push({type:'ok', text:'✅ Strong regulation + transparency: Estonia-like governance model. High AI readiness index score predicted (Oxford 2024).'});
+  if(m.freedom > 70 && m.trust > 65) alerts.push({type:'ok', text:'✅ High freedom + trust: Correlates with democratic resilience in V-Dem liberal democracy index.'});
+  if(s.surveillance > 80 && scenario === 'auth') alerts.push({type:'danger', text:'🔴 Authoritarian high-surveillance: China social credit analog. Psychological coercion documented in Human Rights Watch reports 2023.'});
+
+  if(alerts.length === 0) alerts.push({type:'info', text:'ℹ️ Balanced policy configuration. Adjust sliders to explore governance tradeoffs.'});
+
+  panel.innerHTML = alerts.slice(0,5).map(a => `<div class="alert-box alert-${a.type}" style="font-size:11px">${a.text}</div>`).join('');
+}
+
+function updateEconTable(s, m){
+  const unemploy = clamp(5 + (s.automation*0.20) - (s.welfare*0.08) - (s.regulation*0.03), 3, 35);
+  const gini = clamp(0.28 + (s.automation*0.0025) - (s.welfare*0.001), 0.23, 0.65);
+  const gdpGrowth = clamp(-2 + (s.automation*0.08) + (s.regulation*0.02) - (s.censorship*0.015), -5, 12);
+  const innovIdx = clamp(30 + (s.transparency*0.35) + (s.regulation*0.15) - (s.censorship*0.25), 5, 100);
+
+  document.getElementById('econ-table').innerHTML = `
+    <div class="gdp-row"><span class="gdp-label">Unemployment rate</span><span class="gdp-val" style="color:${unemploy>15?'var(--red)':unemploy>10?'var(--amber)':'var(--green)'}">${unemploy.toFixed(1)}%</span></div>
+    <div class="gdp-row"><span class="gdp-label">Gini coefficient</span><span class="gdp-val" style="color:${gini>0.45?'var(--red)':gini>0.35?'var(--amber)':'var(--green)'}">${gini.toFixed(3)}</span></div>
+    <div class="gdp-row"><span class="gdp-label">GDP growth (projected)</span><span class="gdp-val" style="color:${gdpGrowth<0?'var(--red)':gdpGrowth>4?'var(--green)':'var(--amber)'}">${gdpGrowth.toFixed(1)}%</span></div>
+    <div class="gdp-row"><span class="gdp-label">Innovation index</span><span class="gdp-val">${Math.round(innovIdx)}/100</span></div>
+  `;
+
+  if(econChart){
+    econChart.data.datasets[0].data = [unemploy*3, gini*140, Math.max(0,gdpGrowth*8), innovIdx];
+    econChart.update('none');
+  }
+}
+
+function updateTradeoffs(s, m){
+  const items = [
+    {name:'Crime reduction', val: Math.round(s.surveillance*0.6), desc:'From surveillance', color:'var(--green)'},
+    {name:'Privacy erosion', val: Math.round(s.surveillance*0.85), desc:'Chilling effect', color:'var(--red)'},
+    {name:'Productivity gain', val: Math.round(s.automation*0.75), desc:'From AI automation', color:'var(--green)'},
+    {name:'Job displacement', val: Math.round(Math.max(0,s.automation-20)*0.8), desc:'Labor market shock', color:'var(--red)'},
+    {name:'Hate speech reduction', val: Math.round(s.censorship*0.70), desc:'From content moderation', color:'var(--amber)'},
+    {name:'Narrative monopoly', val: Math.round(s.censorship*0.80), desc:'Govt. control risk', color:'var(--coral)'},
+  ];
+  document.getElementById('tradeoffs').innerHTML = items.map(i => `
+    <div class="tradeoff-item">
+      <div class="tradeoff-name">${i.name}</div>
+      <div class="tradeoff-val" style="color:${i.color}">${i.val}</div>
+      <div class="tradeoff-desc">${i.desc}</div>
+    </div>
+  `).join('');
+}
+
+function updateTimeChart(s){
+  const labels = [];
+  const fData=[], eData=[], tData=[], iData=[], stData=[];
+  for(let t=0;t<=15;t++){
+    labels.push('t='+t);
+    const m = computeMetrics(s, t);
+    fData.push(Math.round(m.freedom));
+    eData.push(Math.round(m.economy));
+    tData.push(Math.round(m.trust));
+    iData.push(Math.round(m.info));
+    stData.push(Math.round(m.stability));
+  }
+  if(timeChart){
+    timeChart.data.labels = labels;
+    timeChart.data.datasets[0].data = fData;
+    timeChart.data.datasets[1].data = eData;
+    timeChart.data.datasets[2].data = tData;
+    timeChart.data.datasets[3].data = iData;
+    timeChart.data.datasets[4].data = stData;
+    timeChart.update('none');
+  }
+}
+
+function initTimeChart(){
+  const ctx = document.getElementById('timeChart').getContext('2d');
+  timeChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: Array.from({length:16},(_,i)=>'t='+i),
+      datasets: [
+        {label:'Freedom', data:[], borderColor:'#00d4ff', borderWidth:2, pointRadius:0, tension:.4, fill:false},
+        {label:'Economy', data:[], borderColor:'#22c55e', borderWidth:2, pointRadius:0, tension:.4, fill:false},
+        {label:'Trust',   data:[], borderColor:'#f59e0b', borderWidth:2, pointRadius:0, tension:.4, fill:false, borderDash:[4,2]},
+        {label:'Info',    data:[], borderColor:'#f97316', borderWidth:2, pointRadius:0, tension:.4, fill:false, borderDash:[2,2]},
+        {label:'Stability', data:[], borderColor:'#a855f7', borderWidth:2, pointRadius:0, tension:.4, fill:false},
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#4a5568',font:{size:10},maxTicksLimit:8}},
+        y:{min:0,max:100,grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#4a5568',font:{size:10}}}
+      }
+    }
+  });
+}
+
+function initEconChart(){
+  const ctx = document.getElementById('econChart').getContext('2d');
+  econChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Unemployment×3', 'Gini×140', 'GDP×8', 'Innovation'],
+      datasets: [{
+        data: [30,50,30,60],
+        backgroundColor: ['#ef4444','#f59e0b','#22c55e','#00d4ff'],
+        borderRadius: 4,
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{grid:{display:false},ticks:{color:'#4a5568',font:{size:10}}},
+        y:{min:0,max:100,grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#4a5568',font:{size:10}}}
+      }
+    }
+  });
+}
+
+function loadRegime(name){
+  if(name === 'custom') { activeRegime='custom'; highlightRegime('custom'); return; }
+  const r = REGIMES[name];
+  document.getElementById('sl-surveillance').value = r.surveillance;
+  document.getElementById('sl-automation').value   = r.automation;
+  document.getElementById('sl-censorship').value   = r.censorship;
+  document.getElementById('sl-welfare').value      = r.welfare;
+  document.getElementById('sl-regulation').value   = r.regulation;
+  document.getElementById('sl-transparency').value = r.transparency;
+  activeRegime = name;
+  highlightRegime(name);
+  onSlide();
+}
+
+function highlightRegime(name){
+  ['china','estonia','singapore','usa','hungary','custom'].forEach(r => {
+    const btn = document.getElementById('btn-'+r);
+    if(btn) btn.className = 'regime-btn' + (r===name?' active':'');
+  });
+}
+
+function setScenario(sc){
+  scenario = sc;
+  ['demo','auth','dev','crisis'].forEach(s => {
+    const btn = document.getElementById('sc-'+s);
+    if(btn) btn.style.background = s===sc ? 'rgba(0,212,255,.07)' : '';
+    if(btn) btn.style.borderColor = s===sc ? 'var(--accent)' : '';
+  });
+  onSlide();
+}
+
+function showPage(name){
+  ['simulator','compare','narrative','methodology'].forEach(p => {
+    document.getElementById('pg-'+p).className = 'page' + (p===name?' active':'');
+  });
+  document.querySelectorAll('.nav-btn').forEach((btn,i) => {
+    btn.classList.toggle('active', ['simulator','compare','narrative','methodology'][i] === name);
+  });
+  if(name==='compare') initRadar();
+  if(name==='narrative') { initSIR(); updateSIR(); }
+}
+
+const REGIME_SCORES = {
+  china:    {freedom:8, economy:68, trust:72, info:20, stability:65, psych:30},
+  estonia:  {freedom:94, economy:72, trust:78, info:88, stability:82, psych:80},
+  singapore:{freedom:52, economy:85, trust:75, info:58, stability:88, psych:68},
+  usa:      {freedom:83, economy:62, trust:42, info:62, stability:60, psych:54},
+  hungary:  {freedom:50, economy:55, trust:48, info:42, stability:58, psych:50},
+};
+
+function initRadar(){
+  if(radarChart) return;
+  const ctx = document.getElementById('radarChart').getContext('2d');
+  const labels = ['Freedom','Economy','Trust','Info Integrity','Stability','Psych Health'];
+  radarChart = new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels,
+      datasets: [
+        {label:'China',    data:[8,68,72,20,65,30],  borderColor:'#ef4444', borderWidth:2, pointRadius:3, fill:false},
+        {label:'Estonia',  data:[94,72,78,88,82,80], borderColor:'#00d4ff', borderWidth:2, pointRadius:3, fill:false},
+        {label:'Singapore',data:[52,85,75,58,88,68], borderColor:'#a855f7', borderWidth:2, pointRadius:3, fill:false},
+        {label:'USA',      data:[83,62,42,62,60,54], borderColor:'#22c55e', borderWidth:2, pointRadius:3, fill:false},
+        {label:'Hungary',  data:[50,55,48,42,58,50], borderColor:'#f59e0b', borderWidth:2, pointRadius:3, fill:false},
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{r:{min:0,max:100,grid:{color:'rgba(255,255,255,.08)'},ticks:{display:false},pointLabels:{color:'#8a97b0',font:{size:11}}}}
+    }
+  });
+
+  buildRegimeCompare();
+  buildEvents('china-events');
+}
+
+function buildRegimeCompare(){
+  const dims = ['freedom','economy','trust','info','stability'];
+  const colors = {freedom:'#00d4ff',economy:'#22c55e',trust:'#f59e0b',info:'#f97316',stability:'#a855f7'};
+  ['china','estonia','singapore','usa','hungary'].forEach(r => {
+    const sc = REGIME_SCORES[r];
+    let html = '';
+    dims.forEach(d => {
+      html += `<div style="display:flex;align-items:center;gap:4px;margin:3px 0;font-size:10px;color:var(--text3)">
+        <span style="width:40px;text-align:right;font-size:9px">${d.slice(0,4)}</span>
+        <div style="flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden">
+          <div style="width:${sc[d]}%;height:100%;background:${colors[d]};border-radius:2px"></div>
+        </div>
+        <span style="width:22px;font-family:var(--mono)">${sc[d]}</span>
+      </div>`;
+    });
+    document.getElementById('rc-'+r).innerHTML = html;
+  });
+}
+
+const EVENTS = {
+  'china-events': [
+    {yr:'2014', text:'Social Credit System piloted in Rongcheng — first mass AI governance experiment', color:'var(--red)'},
+    {yr:'2017', text:'AI Development Plan: China sets goal to lead global AI by 2030, state integration accelerated', color:'var(--amber)'},
+    {yr:'2019', text:'Facial recognition deployed in 600+ cities. Civil liberties score drops 8 points (Freedom House)', color:'var(--red)'},
+    {yr:'2020', text:'COVID surveillance normalization — QR health codes mandate sets permanent precedent', color:'var(--red)'},
+    {yr:'2022', text:'Regulation of algorithmic recommendations passed — paradox: world\'s strictest AI rules + lowest freedom', color:'var(--coral)'},
+    {yr:'2023', text:'Generative AI rules require "correct political orientation" — V-Dem deliberative index hits record low', color:'var(--red)'},
+  ],
+  'estonia-events': [
+    {yr:'1997', text:'Tiger Leap program: 97% schools connected. Foundation for digital trust culture established', color:'var(--teal)'},
+    {yr:'2001', text:'Digital ID card launched — citizen data sovereignty model, used for voting and banking', color:'var(--green)'},
+    {yr:'2007', text:'Russian cyberattacks — resilience forces investment in distributed AI governance architecture', color:'var(--amber)'},
+    {yr:'2017', text:'World\'s first AI policy advisor "Bürokratt" — state services via voice AI, zero surveillance', color:'var(--green)'},
+    {yr:'2021', text:'AI & Ethics framework: mandatory explainability for all government AI decisions', color:'var(--green)'},
+    {yr:'2023', text:'Oxford AI Readiness Index: Estonia ranks 2nd in Europe. Trust + tech = democratic model', color:'var(--teal)'},
+  ],
+  'sg-events': [
+    {yr:'2014', text:'Smart Nation Initiative: top-down digital transformation, surveillance accepted for efficiency', color:'var(--purple)'},
+    {yr:'2019', text:'PDPA amended — data use rights expanded for government AI. Trust maintained via service quality', color:'var(--amber)'},
+    {yr:'2020', text:'TraceTogether — COVID contact tracing app; parliament later admits police accessed data. Trust dip', color:'var(--red)'},
+    {yr:'2019', text:'POFMA fake news law — immediate takedown powers. Press freedom drops but misinformation curbed', color:'var(--coral)'},
+    {yr:'2022', text:'National AI Strategy 2.0 — $500M invested, emphasize fairness + explainability in public AI', color:'var(--green)'},
+  ],
+  'hu-events': [
+    {yr:'2010', text:'Orbán wins supermajority. Media consolidation begins — algorithmic propaganda infrastructure built', color:'var(--red)'},
+    {yr:'2014', text:'Internet tax proposed, mass protests — reversed but signals governance direction', color:'var(--amber)'},
+    {yr:'2018', text:'Stop Soros laws restrict civil society — NGO AI ethics watchdogs effectively neutralized', color:'var(--red)'},
+    {yr:'2020', text:'Pandemic rule by decree — emergency AI surveillance expanded, never fully rolled back', color:'var(--red)'},
+    {yr:'2022', text:'V-Dem reclassifies Hungary as "electoral autocracy" — first EU state to lose democracy status', color:'var(--red)'},
+    {yr:'2023', text:'EU AI Act negotiations: Hungary blocks strongest provisions. Regulatory capture documented', color:'var(--coral)'},
+  ],
+};
+
+function switchTab(name){
+  tabActive = name;
+  document.querySelectorAll('#pg-compare .tab').forEach(t => t.classList.remove('active'));
+  const idx = ['china-events','estonia-events','sg-events','hu-events'].indexOf(name);
+  document.querySelectorAll('#pg-compare .tab')[idx].classList.add('active');
+  buildEvents(name);
+}
+
+function buildEvents(name){
+  const list = EVENTS[name] || [];
+  document.getElementById('events-display').innerHTML = list.map(e => `
+    <li class="event-item">
+      <span class="event-dot" style="background:${e.color}"></span>
+      <div>
+        <div class="event-text">${e.text}</div>
+        <div class="event-yr">${e.yr}</div>
+      </div>
+    </li>
+  `).join('');
+}
+
+let sirChart2;
+function initSIR(){
+  if(sirChart) return;
+  const ctx = document.getElementById('sirChart').getContext('2d');
+  sirChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: Array.from({length:91},(_,i)=>'D'+i),
+      datasets: [
+        {label:'Susceptible', data:[], borderColor:'#3b82f6', borderWidth:2, pointRadius:0, tension:.4, fill:false},
+        {label:'Infected',    data:[], borderColor:'#ef4444', borderWidth:2, pointRadius:0, tension:.4, fill:false},
+        {label:'Recovered',   data:[], borderColor:'#22c55e', borderWidth:2, pointRadius:0, tension:.4, fill:false},
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#4a5568',font:{size:10},maxTicksLimit:10}},
+        y:{min:0,max:100,grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#4a5568',font:{size:10},callback:v=>v+'%'}}
+      }
+    }
+  });
+}
+
+function updateSIR(){
+  const seed = +document.getElementById('sl-seed').value / 100;
+  const beta = +document.getElementById('sl-beta').value / 100;
+  const gamma = +document.getElementById('sl-gamma').value / 100;
+  const amp = +document.getElementById('sl-amplify').value / 10;
+  const cens = +document.getElementById('sl-censor').value;
+
+  document.getElementById('lbl-seed').textContent = Math.round(seed*100);
+  document.getElementById('lbl-beta').textContent = beta.toFixed(2);
+  document.getElementById('lbl-gamma').textContent = gamma.toFixed(2);
+  document.getElementById('lbl-amplify').textContent = amp.toFixed(1)+'x';
+  document.getElementById('lbl-censor').textContent = Math.round(cens);
+
+  let S = 1 - seed, I = seed, R = 0;
+  const sArr=[], iArr=[], rArr=[];
+  let peakI = 0, peakDay = 0;
+
+  const censMod = 1 - (cens/100)*0.7;
+
+  for(let d=0;d<=90;d++){
+    sArr.push(+(S*100).toFixed(1));
+    iArr.push(+(I*100).toFixed(1));
+    rArr.push(+(R*100).toFixed(1));
+    if(I > peakI){ peakI = I; peakDay = d; }
+    const newI = beta * S * I * amp * censMod;
+    const newR = gamma * I * (0.5 + cens/200);
+    S = clamp(S - newI, 0, 1);
+    I = clamp(I + newI - newR, 0, 1);
+    R = clamp(R + newR, 0, 1);
+  }
+
+  document.getElementById('sir-peak').textContent = 'Peak: '+Math.round(peakI*100)+'% on Day '+peakDay;
+
+  if(sirChart){
+    sirChart.data.datasets[0].data = sArr;
+    sirChart.data.datasets[1].data = iArr;
+    sirChart.data.datasets[2].data = rArr;
+    sirChart.update('none');
+  }
+
+  const interventions = [
+    {name:'No intervention', peak: Math.round(peakI*100)+'%', color:'var(--red)', note:'Baseline spread'},
+    {name:'2× fact-checking', peak: Math.round(peakI*65)+'%', color:'var(--amber)', note:'γ doubled via media literacy'},
+    {name:'Platform regulation', peak: Math.round(peakI*45)+'%', color:'var(--green)', note:'Amp reduced 50%'},
+    {name:'High censorship', peak: Math.round(peakI*30)+'%', color:'var(--accent)', note:'Risk: narrative monopoly'},
+    {name:'Prebunking + labels', peak: Math.round(peakI*55)+'%', color:'var(--teal)', note:'Most democratic option'},
+    {name:'AI moderation', peak: Math.round(peakI*50)+'%', color:'var(--purple)', note:'Bias + opacity risks'},
+  ];
+
+  document.getElementById('intervention-grid').innerHTML = interventions.map(i => `
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center">
+      <div style="font-size:10px;color:var(--text3);margin-bottom:4px">${i.name}</div>
+      <div style="font-size:20px;font-weight:700;font-family:var(--mono);color:${i.color}">${i.peak}</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:4px">${i.note}</div>
+    </div>
+  `).join('');
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  initTimeChart();
+  initEconChart();
+  onSlide();
+});
+</script>
+</body>
+</html>

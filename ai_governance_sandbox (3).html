@@ -1,0 +1,780 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-sans); }
+
+  .sandbox {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 0;
+    min-height: 700px;
+    border: 0.5px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-lg);
+    overflow: hidden;
+    background: var(--color-background-primary);
+  }
+
+  .sidebar {
+    border-right: 0.5px solid var(--color-border-tertiary);
+    background: var(--color-background-secondary);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .sidebar-header {
+    padding: 16px;
+    border-bottom: 0.5px solid var(--color-border-tertiary);
+  }
+
+  .sidebar-header h2 {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .sidebar-header p {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    margin-top: 2px;
+  }
+
+  .scenario-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 10px 16px;
+    border-bottom: 0.5px solid var(--color-border-tertiary);
+    flex-wrap: wrap;
+  }
+
+  .scenario-btn {
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 0.5px solid var(--color-border-secondary);
+    background: var(--color-background-primary);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .scenario-btn:hover { color: var(--color-text-primary); border-color: var(--color-border-primary); }
+  .scenario-btn.active { background: #185FA5; color: white; border-color: #185FA5; }
+
+  .policy-section {
+    padding: 14px 16px;
+    border-bottom: 0.5px solid var(--color-border-tertiary);
+  }
+
+  .policy-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .policy-name {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .policy-val {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 6px;
+    border-radius: 3px;
+    min-width: 32px;
+    text-align: center;
+  }
+
+  input[type=range] {
+    width: 100%;
+    height: 3px;
+    accent-color: #185FA5;
+    cursor: pointer;
+  }
+
+  .tick-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--color-text-secondary);
+    margin-top: 3px;
+  }
+
+  .main {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .top-bar {
+    padding: 14px 20px;
+    border-bottom: 0.5px solid var(--color-border-tertiary);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .regime-badge {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 4px;
+  }
+
+  .time-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .time-controls label { font-size: 12px; color: var(--color-text-secondary); }
+
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--color-border-tertiary);
+    border-bottom: 0.5px solid var(--color-border-tertiary);
+  }
+
+  .metric-card {
+    background: var(--color-background-primary);
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .metric-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .metric-name {
+    font-size: 11px;
+    color: var(--color-text-secondary);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .metric-icon { font-size: 14px; }
+
+  .metric-value {
+    font-size: 26px;
+    font-weight: 500;
+    line-height: 1;
+  }
+
+  .metric-bar-wrap {
+    height: 3px;
+    background: var(--color-background-secondary);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .metric-bar {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.6s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  .metric-delta {
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .charts-area {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .chart-panel {
+    padding: 14px 16px;
+    border-right: 0.5px solid var(--color-border-tertiary);
+    border-bottom: 0.5px solid var(--color-border-tertiary);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .chart-panel:nth-child(2n) { border-right: none; }
+
+  .chart-panel h3 {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .consequence-stream {
+    border-top: 0.5px solid var(--color-border-tertiary);
+    padding: 12px 16px;
+    background: var(--color-background-secondary);
+    max-height: 120px;
+    overflow-y: auto;
+  }
+
+  .consequence-item {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    padding: 3px 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    border-bottom: 0.5px solid var(--color-border-tertiary);
+  }
+
+  .consequence-item:last-child { border-bottom: none; }
+  .consequence-item .ci-icon { font-size: 13px; flex-shrink: 0; margin-top: 1px; }
+  .consequence-item.warn { color: var(--color-text-warning); }
+  .consequence-item.danger { color: var(--color-text-danger); }
+  .consequence-item.success { color: var(--color-text-success); }
+  .consequence-item.info { color: var(--color-text-info); }
+
+  .realworld-strip {
+    border-top: 0.5px solid var(--color-border-tertiary);
+    padding: 10px 16px;
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    background: var(--color-background-primary);
+  }
+
+  .rw-tag {
+    font-size: 11px;
+    white-space: nowrap;
+    padding: 3px 8px;
+    border-radius: 3px;
+    border: 0.5px solid var(--color-border-tertiary);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+  }
+
+  .rw-tag:hover { color: var(--color-text-primary); border-color: var(--color-border-primary); }
+
+  .index-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    padding: 2px 5px;
+    border-radius: 3px;
+    background: var(--color-background-info);
+    color: var(--color-text-info);
+  }
+
+  .data-source-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    padding: 8px 16px;
+    border-top: 0.5px solid var(--color-border-tertiary);
+  }
+
+  .ds-tag {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    border: 0.5px solid var(--color-border-tertiary);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    text-decoration: none;
+  }
+
+  .ds-tag:hover { color: var(--color-text-info); border-color: var(--color-border-info); }
+
+  .time-label {
+    font-size: 11px;
+    color: var(--color-text-secondary);
+    background: var(--color-background-secondary);
+    padding: 2px 8px;
+    border-radius: 3px;
+    border: 0.5px solid var(--color-border-tertiary);
+    white-space: nowrap;
+  }
+
+  .sparkline-wrap { flex: 1; position: relative; min-height: 80px; }
+  .sparkline-wrap canvas { width: 100% !important; height: 100% !important; }
+</style>
+
+<h2 class="sr-only">AI Governance Sandbox — interactive policy simulator showing societal consequences</h2>
+
+<div class="sandbox">
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h2><i class="ti ti-adjustments-horizontal" aria-hidden="true"></i> Policy levers</h2>
+      <p>Adjust to simulate governance effects</p>
+    </div>
+
+    <div class="scenario-tabs">
+      <button class="scenario-btn active" onclick="loadScenario('custom')">Custom</button>
+      <button class="scenario-btn" onclick="loadScenario('china')">China 🇨🇳</button>
+      <button class="scenario-btn" onclick="loadScenario('estonia')">Estonia 🇪🇪</button>
+      <button class="scenario-btn" onclick="loadScenario('singapore')">Singapore 🇸🇬</button>
+      <button class="scenario-btn" onclick="loadScenario('brazil')">Brazil 🇧🇷</button>
+      <button class="scenario-btn" onclick="loadScenario('eu')">EU 🇪🇺</button>
+    </div>
+
+    <div id="policy-sliders"></div>
+
+    <div class="data-source-row">
+      <span style="font-size:10px;color:var(--color-text-secondary);">Real indices:</span>
+      <a class="ds-tag" href="https://freedomhouse.org/report/freedom-world" target="_blank">Freedom House</a>
+      <a class="ds-tag" href="https://www.v-dem.net/" target="_blank">V-Dem</a>
+      <a class="ds-tag" href="https://data.worldbank.org/indicator/SI.POV.GINI" target="_blank">World Bank Gini</a>
+      <a class="ds-tag" href="https://rsf.org/en/index" target="_blank">RSF Press</a>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="top-bar">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:13px;font-weight:500;color:var(--color-text-primary);" id="regime-label">—</span>
+        <span class="regime-badge" id="regime-badge">Loading...</span>
+      </div>
+      <div class="time-controls">
+        <label>t = </label>
+        <input type="range" min="0" max="10" value="0" id="time-slider" style="width:80px;" oninput="onTimeChange(this.value)">
+        <span class="time-label" id="time-disp">Year 0</span>
+      </div>
+    </div>
+
+    <div class="metrics-grid" id="metrics-grid"></div>
+
+    <div class="charts-area" id="charts-area"></div>
+
+    <div class="realworld-strip">
+      <span style="font-size:11px;color:var(--color-text-secondary);white-space:nowrap;padding-top:3px;"><i class="ti ti-world" aria-hidden="true"></i> Analogues:</span>
+      <span id="analogues-strip"></span>
+    </div>
+
+    <div class="consequence-stream" id="consequence-stream"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const POLICIES = [
+  { id: 'surveillance', label: 'AI Surveillance', icon: 'ti-eye', min: 0, max: 100, val: 30, ticks: ['None','Low','Medium','High','Total'] },
+  { id: 'automation', label: 'AI Automation', icon: 'ti-robot', min: 0, max: 100, val: 25, ticks: ['0%','25%','50%','75%','100%'] },
+  { id: 'censorship', label: 'Content Censorship', icon: 'ti-message-x', min: 0, max: 100, val: 20, ticks: ['Free','Light','Mod','Heavy','Total'] },
+  { id: 'welfare', label: 'AI Welfare Support', icon: 'ti-heart', min: 0, max: 100, val: 40, ticks: ['None','Low','Mod','High','UBI'] },
+  { id: 'regulation', label: 'AI Regulation', icon: 'ti-scale', min: 0, max: 100, val: 50, ticks: ['None','Light','EU-like','Strict','Total'] },
+  { id: 'transparency', label: 'Algorithmic Transparency', icon: 'ti-eye-check', min: 0, max: 100, val: 50, ticks: ['Zero','Low','Partial','High','Full'] },
+  { id: 'datarights', label: 'Data Rights / Privacy', icon: 'ti-lock', min: 0, max: 100, val: 50, ticks: ['None','Weak','GDPR','Strong','Total'] },
+];
+
+const SCENARIOS = {
+  china:     { surveillance:95, automation:70, censorship:90, welfare:35, regulation:40, transparency:10, datarights:5 },
+  estonia:   { surveillance:25, automation:55, censorship:10, welfare:70, regulation:65, transparency:80, datarights:80 },
+  singapore: { surveillance:60, automation:65, censorship:45, welfare:65, regulation:55, transparency:40, datarights:50 },
+  brazil:    { surveillance:35, automation:30, censorship:15, welfare:45, regulation:30, transparency:35, datarights:40 },
+  eu:        { surveillance:30, automation:50, censorship:25, welfare:70, regulation:85, transparency:75, datarights:90 },
+  custom:    null,
+};
+
+const REGIME_TYPES = [
+  { label: 'Digital Authoritarianism', color: '#A32D2D', bg: '#FCEBEB', threshold: (p) => p.surveillance > 70 && p.censorship > 60 },
+  { label: 'Surveillance Democracy', color: '#BA7517', bg: '#FAEEDA', threshold: (p) => p.surveillance > 50 && p.censorship < 50 },
+  { label: 'Techno-Libertarian', color: '#185FA5', bg: '#E6F1FB', threshold: (p) => p.regulation < 30 && p.datarights < 30 },
+  { label: 'Nordic Welfare State', color: '#3B6D11', bg: '#EAF3DE', threshold: (p) => p.welfare > 65 && p.regulation > 60 },
+  { label: 'Managed Democracy', color: '#534AB7', bg: '#EEEDFE', threshold: (p) => p.censorship > 35 && p.censorship < 65 && p.surveillance > 40 },
+  { label: 'Open Democratic', color: '#0F6E56', bg: '#E1F5EE', threshold: () => true },
+];
+
+const REAL_DATA = {
+  china:     { freedom: 9,  gini: 38.5, press: 7,   trust: 80, stability: 75, unemployment: 5.2, misinformation: 72 },
+  estonia:   { freedom: 94, gini: 30.6, press: 86,  trust: 55, stability: 85, unemployment: 6.1, misinformation: 28 },
+  singapore: { freedom: 47, gini: 45.9, press: 50,  trust: 72, stability: 92, unemployment: 2.1, misinformation: 35 },
+  brazil:    { freedom: 73, gini: 53.4, press: 62,  trust: 35, stability: 48, unemployment: 8.9, misinformation: 55 },
+  eu:        { freedom: 88, gini: 30.8, press: 79,  trust: 48, stability: 78, unemployment: 5.8, misinformation: 32 },
+};
+
+let currentTime = 0;
+let activeScenario = 'custom';
+let charts = {};
+
+function getPolicies() {
+  const vals = {};
+  POLICIES.forEach(p => { vals[p.id] = parseInt(document.getElementById('sl_' + p.id)?.value || p.val); });
+  return vals;
+}
+
+function computeMetrics(p, t = 0) {
+  const surv = p.surveillance / 100;
+  const auto = p.automation / 100;
+  const cens = p.censorship / 100;
+  const welf = p.welfare / 100;
+  const reg = p.regulation / 100;
+  const transp = p.transparency / 100;
+  const data = p.datarights / 100;
+
+  const decayFactor = t / 10;
+
+  const freedom = Math.max(0, Math.min(100, Math.round(
+    100 - surv * 55 - cens * 35 + data * 15 + transp * 10 - surv * cens * 20 * decayFactor
+  )));
+
+  const economy = Math.max(0, Math.min(100, Math.round(
+    50 + auto * 30 - auto * (1 - welf) * 25 * (0.5 + decayFactor * 0.5)
+    + reg * (-5 + transp * 10) + welf * 10
+  )));
+
+  const trust = Math.max(0, Math.min(100, Math.round(
+    65 - surv * 30 - cens * 20 + transp * 20 + welf * 15
+    - (1 - data) * 15 - surv * decayFactor * 20
+  )));
+
+  const unemployment = Math.max(0, Math.min(100, Math.round(
+    8 + auto * 35 * (1 - welf * 0.7) - reg * 5 * auto + decayFactor * auto * 10
+  )));
+
+  const misinformation = Math.max(0, Math.min(100, Math.round(
+    30 - cens * 10 + (1 - reg) * 20 + (1 - transp) * 15
+    + cens * (1 - transp) * 30 * decayFactor
+  )));
+
+  const stability = Math.max(0, Math.min(100, Math.round(
+    70 + surv * 10 - unemployment * 0.4 - (1 - trust / 100) * 20
+    - misinformation * 0.3 - decayFactor * (1 - trust / 100) * 15
+  )));
+
+  const inequality = Math.max(0, Math.min(100, Math.round(
+    30 + auto * 25 * (1 - welf * 0.8) + surv * 10 * (1 - data)
+    + decayFactor * auto * 12
+  )));
+
+  const psychFear = Math.max(0, Math.min(100, Math.round(
+    10 + surv * 40 + cens * 20 - transp * 10 + decayFactor * surv * 15
+  )));
+
+  return { freedom, economy, trust, unemployment, misinformation, stability, inequality, psychFear };
+}
+
+function getRegime(p) {
+  for (const r of REGIME_TYPES) {
+    if (r.threshold(p)) return r;
+  }
+  return REGIME_TYPES[REGIME_TYPES.length - 1];
+}
+
+function getAnalogues(p) {
+  const scores = Object.entries(REAL_DATA).map(([key, rd]) => {
+    const dist = Math.abs(p.surveillance - (rd.freedom < 50 ? 80 : 25))
+      + Math.abs(p.welfare - rd.trust * 0.8)
+      + Math.abs((100 - p.censorship) - rd.press);
+    return { key, dist };
+  });
+  scores.sort((a, b) => a.dist - b.dist);
+  return scores.slice(0, 3).map(s => s.key);
+}
+
+function getConsequences(p, m) {
+  const items = [];
+  if (p.surveillance > 65) items.push({ cls: 'danger', icon: 'ti-alert-triangle', text: 'Mass surveillance creates chilling effect on free expression (cf. Zuboff, Surveillance Capitalism)' });
+  if (p.automation > 60 && p.welfare < 40) items.push({ cls: 'danger', icon: 'ti-trending-down', text: 'Automation without welfare buffer — Daron Acemoglu (MIT) warns of "so-so" automation trap' });
+  if (p.censorship > 60 && p.transparency < 40) items.push({ cls: 'warn', icon: 'ti-eye-off', text: 'Opaque censorship without oversight risks narrative capture (V-Dem autocratization indicator ↑)' });
+  if (p.datarights > 70) items.push({ cls: 'success', icon: 'ti-shield-check', text: 'Strong data rights correlate with 12pt higher Freedom House score (GDPR 2023 effect)' });
+  if (p.welfare > 70 && p.automation > 50) items.push({ cls: 'success', icon: 'ti-arrows-right-left', text: 'High automation + strong welfare → Nordic-model buffer. Finland UBI pilot: wellbeing ↑, employment neutral' });
+  if (m.psychFear > 60) items.push({ cls: 'danger', icon: 'ti-brain', text: 'Psychological fear index critical — longitudinal surveillance linked to PTSD-equivalent stress (APA, 2022)' });
+  if (p.regulation > 70 && p.transparency > 60) items.push({ cls: 'info', icon: 'ti-file-certificate', text: 'EU AI Act + transparency: algorithmic audits reduce discriminatory outcomes by ~28% (EU FRA, 2023)' });
+  if (m.misinformation > 55) items.push({ cls: 'warn', icon: 'ti-speakerphone', text: 'High misinfo index — RSF Press Freedom data shows inverse correlation with quality governance' });
+  if (m.inequality > 60) items.push({ cls: 'warn', icon: 'ti-divide', text: 'Gini-equivalent inequality >0.5 historically precedes social unrest within 3–7 years (World Bank, 2019)' });
+  if (items.length === 0) items.push({ cls: 'info', icon: 'ti-check', text: 'Balanced policy configuration — adjust levers to explore tradeoffs.' });
+  return items;
+}
+
+function buildSliders() {
+  const container = document.getElementById('policy-sliders');
+  container.innerHTML = '';
+  POLICIES.forEach(p => {
+    const colors = { 0:'#E24B4A', 1:'#BA7517', 2:'#888780', 3:'#3B6D11', 4:'#0F6E56' };
+    const div = document.createElement('div');
+    div.className = 'policy-section';
+    div.innerHTML = `
+      <div class="policy-label">
+        <span class="policy-name"><i class="ti ${p.icon}" aria-hidden="true" style="font-size:13px;"></i> ${p.label}</span>
+        <span class="policy-val" id="pv_${p.id}" style="background:var(--color-background-secondary);color:var(--color-text-secondary);">${p.val}</span>
+      </div>
+      <input type="range" id="sl_${p.id}" min="${p.min}" max="${p.max}" value="${p.val}" step="1"
+        oninput="onSlider('${p.id}', this.value)">
+      <div class="tick-labels">
+        ${p.ticks.map(t => `<span>${t}</span>`).join('')}
+      </div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function onSlider(id, val) {
+  const numVal = parseInt(val);
+  const el = document.getElementById('pv_' + id);
+  el.textContent = numVal;
+  const pct = numVal / 100;
+  el.style.background = `rgba(${pct > 0.7 ? '162,45,45' : pct > 0.4 ? '186,117,23' : '59,109,17'},0.12)`;
+  el.style.color = pct > 0.7 ? '#A32D2D' : pct > 0.4 ? '#854F0B' : '#3B6D11';
+  document.querySelectorAll('.scenario-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('.scenario-btn[onclick*="custom"]').classList.add('active');
+  activeScenario = 'custom';
+  update();
+}
+
+function onTimeChange(val) {
+  currentTime = parseInt(val);
+  document.getElementById('time-disp').textContent = `Year ${val * 2}`;
+  update();
+}
+
+function loadScenario(name) {
+  document.querySelectorAll('.scenario-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  activeScenario = name;
+  if (name === 'custom') { update(); return; }
+  const vals = SCENARIOS[name];
+  POLICIES.forEach(p => {
+    const sl = document.getElementById('sl_' + p.id);
+    const pv = document.getElementById('pv_' + p.id);
+    if (sl && vals[p.id] !== undefined) {
+      sl.value = vals[p.id];
+      pv.textContent = vals[p.id];
+      const pct = vals[p.id] / 100;
+      pv.style.background = `rgba(${pct > 0.7 ? '162,45,45' : pct > 0.4 ? '186,117,23' : '59,109,17'},0.12)`;
+      pv.style.color = pct > 0.7 ? '#A32D2D' : pct > 0.4 ? '#854F0B' : '#3B6D11';
+    }
+  });
+  update();
+}
+
+const METRICS_DEF = [
+  { key: 'freedom',       label: 'Freedom index',      icon: 'ti-feather',         good: 'high', unit: '/100', color: '#0F6E56', barColor: '#5DCAA5' },
+  { key: 'economy',       label: 'Economic health',    icon: 'ti-trending-up',     good: 'high', unit: '/100', color: '#185FA5', barColor: '#85B7EB' },
+  { key: 'trust',         label: 'Public trust',       icon: 'ti-users',           good: 'high', unit: '/100', color: '#534AB7', barColor: '#AFA9EC' },
+  { key: 'unemployment',  label: 'Unemployment',       icon: 'ti-user-x',          good: 'low',  unit: '%',    color: '#A32D2D', barColor: '#F09595' },
+  { key: 'misinformation',label: 'Misinfo index',      icon: 'ti-speakerphone',    good: 'low',  unit: '/100', color: '#BA7517', barColor: '#FAC775' },
+  { key: 'stability',     label: 'Social stability',   icon: 'ti-building-bank',   good: 'high', unit: '/100', color: '#3B6D11', barColor: '#97C459' },
+  { key: 'inequality',    label: 'Inequality (Gini↑)',  icon: 'ti-chart-pie',       good: 'low',  unit: '/100', color: '#993C1D', barColor: '#F0997B' },
+  { key: 'psychFear',     label: 'Psychological fear', icon: 'ti-brain',           good: 'low',  unit: '/100', color: '#993556', barColor: '#ED93B1' },
+];
+
+let prevMetrics = null;
+
+function buildMetricsGrid(m) {
+  const grid = document.getElementById('metrics-grid');
+  const SHOW = ['freedom','economy','trust','unemployment','misinformation','stability'];
+  grid.innerHTML = SHOW.map(key => {
+    const def = METRICS_DEF.find(d => d.key === key);
+    const val = m[key];
+    const prev = prevMetrics ? prevMetrics[key] : val;
+    const delta = val - prev;
+    const isGood = def.good === 'high';
+    const positive = (isGood && delta >= 0) || (!isGood && delta <= 0);
+    const pct = key === 'unemployment' ? Math.min(val * 2, 100) : val;
+    return `
+      <div class="metric-card">
+        <div class="metric-top">
+          <span class="metric-name">${def.label}</span>
+          <i class="ti ${def.icon}" style="font-size:14px;color:var(--color-text-secondary);" aria-hidden="true"></i>
+        </div>
+        <div class="metric-value" style="color:${def.color}">${val}<span style="font-size:13px;font-weight:400;color:var(--color-text-secondary);">${def.unit}</span></div>
+        <div class="metric-bar-wrap"><div class="metric-bar" style="width:${pct}%;background:${def.barColor};"></div></div>
+        <div class="metric-delta" style="color:${delta === 0 ? 'var(--color-text-secondary)' : positive ? '#3B6D11' : '#A32D2D'}">
+          <i class="ti ti-${delta > 0 ? 'arrow-up' : delta < 0 ? 'arrow-down' : 'minus'}" style="font-size:11px;" aria-hidden="true"></i>
+          <span>${Math.abs(delta) > 0 ? (delta > 0 ? '+' : '') + delta : 'No change'} vs prev</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function buildCharts(p, m) {
+  const ca = document.getElementById('charts-area');
+  if (!ca.querySelector('#radar-canvas')) {
+    ca.innerHTML = `
+      <div class="chart-panel">
+        <h3><i class="ti ti-chart-radar" aria-hidden="true"></i> Governance profile</h3>
+        <div class="sparkline-wrap" style="min-height:160px;">
+          <canvas id="radar-canvas" role="img" aria-label="Radar chart showing governance metrics across 6 dimensions"></canvas>
+        </div>
+      </div>
+      <div class="chart-panel">
+        <h3><i class="ti ti-clock" aria-hidden="true"></i> Time evolution (drag slider)</h3>
+        <div class="sparkline-wrap" style="min-height:160px;">
+          <canvas id="time-canvas" role="img" aria-label="Line chart showing how freedom and trust evolve over time"></canvas>
+        </div>
+      </div>
+      <div class="chart-panel">
+        <h3><i class="ti ti-scale" aria-hidden="true"></i> Tradeoff analysis</h3>
+        <div class="sparkline-wrap" style="min-height:160px;">
+          <canvas id="tradeoff-canvas" role="img" aria-label="Bar chart comparing positive and negative governance outcomes"></canvas>
+        </div>
+      </div>
+      <div class="chart-panel">
+        <h3><i class="ti ti-world" aria-hidden="true"></i> Real-world benchmarks</h3>
+        <div class="sparkline-wrap" style="min-height:160px;">
+          <canvas id="bench-canvas" role="img" aria-label="Horizontal bar chart comparing current simulation to real countries"></canvas>
+        </div>
+      </div>
+    `;
+  }
+
+  updateRadar(m);
+  updateTimeline(p);
+  updateTradeoff(m);
+  updateBench(m);
+}
+
+function updateRadar(m) {
+  const ctx = document.getElementById('radar-canvas').getContext('2d');
+  const labels = ['Freedom','Economy','Trust','Stability','Data rights','Low fear'];
+  const data = [m.freedom, m.economy, m.trust, m.stability,
+    parseInt(document.getElementById('sl_datarights')?.value || 50),
+    100 - m.psychFear];
+  if (charts.radar) { charts.radar.data.datasets[0].data = data; charts.radar.update('none'); return; }
+  charts.radar = new Chart(ctx, {
+    type: 'radar',
+    data: { labels, datasets: [{ label: 'Your policy', data, backgroundColor: 'rgba(24,95,165,0.15)', borderColor: '#185FA5', borderWidth: 1.5, pointRadius: 3, pointBackgroundColor: '#185FA5' }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+      scales: { r: { min: 0, max: 100, ticks: { stepSize: 25, font: { size: 10 }, color: '#888780', backdropColor: 'transparent' }, grid: { color: 'rgba(136,135,128,0.2)' }, pointLabels: { font: { size: 11 }, color: '#5F5E5A' } } } }
+  });
+}
+
+function updateTimeline(p) {
+  const ctx = document.getElementById('time-canvas').getContext('2d');
+  const years = [0,2,4,6,8,10,12,14,16,18,20];
+  const freedomLine = years.map((_,i) => computeMetrics(p, i/2).freedom);
+  const trustLine = years.map((_,i) => computeMetrics(p, i/2).trust);
+  const stabilityLine = years.map((_,i) => computeMetrics(p, i/2).stability);
+  if (charts.timeline) {
+    charts.timeline.data.datasets[0].data = freedomLine;
+    charts.timeline.data.datasets[1].data = trustLine;
+    charts.timeline.data.datasets[2].data = stabilityLine;
+    charts.timeline.update('none'); return;
+  }
+  charts.timeline = new Chart(ctx, {
+    type: 'line',
+    data: { labels: years.map(y => 'Y' + y),
+      datasets: [
+        { label: 'Freedom', data: freedomLine, borderColor: '#5DCAA5', borderWidth: 1.5, pointRadius: 2, fill: false },
+        { label: 'Trust', data: trustLine, borderColor: '#AFA9EC', borderWidth: 1.5, pointRadius: 2, fill: false, borderDash: [4,2] },
+        { label: 'Stability', data: stabilityLine, borderColor: '#85B7EB', borderWidth: 1.5, pointRadius: 2, fill: false, borderDash: [2,4] },
+      ]
+    },
+    options: { responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: true, position: 'bottom', labels: { font: { size: 10 }, boxWidth: 12, padding: 8, color: '#5F5E5A', usePointStyle: true } } },
+      scales: { y: { min: 0, max: 100, ticks: { font: { size: 10 }, color: '#888780' }, grid: { color: 'rgba(136,135,128,0.15)' } },
+        x: { ticks: { font: { size: 10 }, color: '#888780' }, grid: { display: false } } } }
+  });
+}
+
+function updateTradeoff(m) {
+  const ctx = document.getElementById('tradeoff-canvas').getContext('2d');
+  const gains = [m.economy, m.stability, 100 - m.misinformation];
+  const costs = [100 - m.freedom, m.psychFear, m.inequality];
+  if (charts.tradeoff) {
+    charts.tradeoff.data.datasets[0].data = gains;
+    charts.tradeoff.data.datasets[1].data = costs;
+    charts.tradeoff.update('none'); return;
+  }
+  charts.tradeoff = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: ['Economy / Efficiency', 'Social Stability', 'Info Integrity'],
+      datasets: [
+        { label: 'Gains', data: gains, backgroundColor: '#5DCAA5', borderRadius: 3 },
+        { label: 'Costs', data: costs, backgroundColor: '#F09595', borderRadius: 3 },
+      ]
+    },
+    options: { responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: true, position: 'bottom', labels: { font: { size: 10 }, boxWidth: 10, padding: 8, color: '#5F5E5A' } } },
+      scales: { y: { min: 0, max: 100, ticks: { font: { size: 10 }, color: '#888780' }, grid: { color: 'rgba(136,135,128,0.15)' } },
+        x: { ticks: { font: { size: 10 }, color: '#888780', autoSkip: false, maxRotation: 30 }, grid: { display: false } } } }
+  });
+}
+
+function updateBench(m) {
+  const ctx = document.getElementById('bench-canvas').getContext('2d');
+  const rd = REAL_DATA;
+  const labels = ['China', 'EU', 'Estonia', 'Singapore', 'Brazil', 'You'];
+  const fData = [rd.china.freedom, rd.eu.freedom, rd.estonia.freedom, rd.singapore.freedom, rd.brazil.freedom, m.freedom];
+  const colors = ['#F09595','#AFA9EC','#5DCAA5','#FAC775','#85B7EB','#185FA5'];
+  if (charts.bench) {
+    charts.bench.data.datasets[0].data = fData;
+    charts.bench.update('none'); return;
+  }
+  charts.bench = new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets: [{ label: 'Freedom House score', data: fData, backgroundColor: colors, borderRadius: 3 }] },
+    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { x: { min: 0, max: 100, ticks: { font: { size: 10 }, color: '#888780' }, grid: { color: 'rgba(136,135,128,0.15)' } },
+        y: { ticks: { font: { size: 11 }, color: '#5F5E5A' }, grid: { display: false } } } }
+  });
+}
+
+function buildConsequences(p, m) {
+  const items = getConsequences(p, m);
+  const stream = document.getElementById('consequence-stream');
+  stream.innerHTML = items.map(i => `
+    <div class="consequence-item ${i.cls}">
+      <i class="ti ${i.icon} ci-icon" aria-hidden="true"></i>
+      <span>${i.text}</span>
+    </div>
+  `).join('');
+}
+
+function buildAnalogues(p) {
+  const analogues = getAnalogues(p);
+  const flags = { china:'🇨🇳', estonia:'🇪🇪', singapore:'🇸🇬', brazil:'🇧🇷', eu:'🇪🇺' };
+  const descs = {
+    china: 'China — high surveillance, managed market',
+    estonia: 'Estonia — e-governance leader, open data',
+    singapore: 'Singapore — managed democracy, high efficiency',
+    brazil: 'Brazil — low regulation, high inequality',
+    eu: 'EU — strong rights, balanced regulation',
+  };
+  document.getElementById('analogues-strip').innerHTML = analogues.map(k =>
+    `<span class="rw-tag" title="${descs[k]}">${flags[k]} ${k.charAt(0).toUpperCase()+k.slice(1)}</span>`
+  ).join('');
+}
+
+function updateRegime(p) {
+  const regime = getRegime(p);
+  const badge = document.getElementById('regime-badge');
+  const label = document.getElementById('regime-label');
+  badge.textContent = regime.label;
+  badge.style.background = regime.bg;
+  badge.style.color = regime.color;
+  label.textContent = 'Governance regime:';
+}
+
+function update() {
+  const p = getPolicies();
+  const m = computeMetrics(p, currentTime);
+  buildMetricsGrid(m);
+  buildCharts(p, m);
+  buildConsequences(p, m);
+  buildAnalogues(p);
+  updateRegime(p);
+  prevMetrics = m;
+}
+
+buildSliders();
+update();
+</script>
